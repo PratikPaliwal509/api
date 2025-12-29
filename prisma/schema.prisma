@@ -1,0 +1,588 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/////////////////////
+// CORE STRUCTURE //
+/////////////////////
+
+model Role {
+  role_id          Int       @id @default(autoincrement())
+  role_name        String    @unique @db.VarChar(50)
+  role_description String?
+  permissions      Json      @default("{}")
+  is_system_role   Boolean?  @default(true)
+  created_at       DateTime? @default(now())
+  updated_at       DateTime? @default(now())
+
+  users User[]
+
+  @@map("roles")
+}
+
+model Agency {
+  agency_id   Int     @id @default(autoincrement())
+  agency_name String  @db.VarChar(255)
+  agency_slug String  @unique @db.VarChar(255)
+  industry    String? @db.VarChar(100)
+  address     String?
+  city        String? @db.VarChar(100)
+  state       String? @db.VarChar(100)
+  country     String? @db.VarChar(100)
+  postal_code String? @db.VarChar(20)
+  phone       String? @db.VarChar(20)
+  email       String? @db.VarChar(255)
+  website     String? @db.VarChar(255)
+  logo_url    String?
+
+  plan_type               String    @default("trial") @db.VarChar(50)
+  subscription_status     String    @default("active") @db.VarChar(50)
+  subscription_start_date DateTime?
+  subscription_end_date   DateTime?
+  billing_email           String?   @db.VarChar(255)
+
+  timezone    String @default("UTC") @db.VarChar(100)
+  date_format String @default("YYYY-MM-DD") @db.VarChar(20)
+  time_format String @default("24h") @db.VarChar(20)
+  currency    String @default("USD") @db.VarChar(10)
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relationships
+  users       User[]
+  departments Department[]
+  teams       Team[]
+  clients     Client[]
+  projects    Project[]
+
+  @@map("agencies")
+}
+
+model Department {
+  department_id        Int       @id @default(autoincrement())
+  agency_id            Int
+  department_name      String    @db.VarChar(255)
+  department_code      String?   @db.VarChar(50)
+  description          String?
+  manager_id           Int? // FK to User
+  parent_department_id Int? // Self-referencing
+  is_active            Boolean?  @default(true)
+  created_at           DateTime? @default(now())
+  updated_at           DateTime? @default(now())
+
+  // Relations
+  agency          Agency       @relation(fields: [agency_id], references: [agency_id])
+  manager         User?        @relation("ManagerDepartments", fields: [manager_id], references: [user_id])
+  parent          Department?  @relation("DepartmentHierarchy", fields: [parent_department_id], references: [department_id])
+  sub_departments Department[] @relation("DepartmentHierarchy")
+  users           User[]
+  teams           Team[]
+
+  @@unique([agency_id, department_code])
+  @@map("departments")
+}
+
+model Team {
+  team_id       Int       @id @default(autoincrement())
+  agency_id     Int
+  department_id Int?
+  team_name     String    @db.VarChar(255)
+  team_code     String?   @db.VarChar(50)
+  description   String?
+  team_lead_id  Int?
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now())
+  updated_at    DateTime? @default(now())
+
+  // Relations
+  agency     Agency      @relation(fields: [agency_id], references: [agency_id])
+  department Department? @relation(fields: [department_id], references: [department_id])
+
+  team_lead     User?  @relation("TeamLead", fields: [team_lead_id], references: [user_id])
+  users         User[] @relation("UserTeams") // ← fixed: relation name added
+  primary_users User[] @relation("UserPrimaryTeam")
+
+  @@unique([agency_id, team_code])
+  @@map("teams")
+}
+
+model User {
+  user_id Int @id @default(autoincrement())
+
+  agency_id     Int
+  role_id       Int
+  department_id Int?
+  team_id       Int?
+  email         String @unique @db.VarChar(255)
+  password_hash String @db.VarChar(255)
+
+  two_factor_enabled Boolean @default(false)
+  two_factor_secret  String? @db.VarChar(255)
+
+  first_name String  @db.VarChar(100)
+  last_name  String  @db.VarChar(100)
+  full_name  String? @db.VarChar(255) // Computed in DB: first + last
+
+  phone           String?   @db.VarChar(20)
+  mobile          String?   @db.VarChar(20)
+  avatar_url      String?
+  bio             String?
+  job_title       String?   @db.VarChar(100)
+  employee_id     String?   @db.VarChar(50)
+  date_of_joining DateTime? @db.Date
+
+  hourly_rate              Decimal? @db.Decimal(10, 2)
+  timezone                 String   @default("UTC") @db.VarChar(100)
+  language                 String   @default("en") @db.VarChar(10)
+  notification_preferences Json?    @default("{}")
+
+  is_active   Boolean @default(true)
+  is_verified Boolean @default(false)
+
+  last_login_at DateTime?
+  last_login_ip String?   @db.VarChar(45)
+  created_by    Int?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  //Relations//
+
+  agency       Agency      @relation(fields: [agency_id], references: [agency_id])
+  role         Role        @relation(fields: [role_id], references: [role_id])
+  department   Department? @relation(fields: [department_id], references: [department_id])
+  teams        Team[]      @relation("UserTeams") // ← matches Team.users
+  creator      User?       @relation("UserCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
+  createdUsers User[]      @relation("UserCreatedBy")
+
+  manager_of_departments Department[] @relation("ManagerDepartments")
+  lead_of_teams          Team[]       @relation("TeamLead")
+
+  managed_clients Client[] @relation("AccountManagedClients")
+  portal_clients  Client[] @relation("PortalClients")
+  created_clients Client[] @relation("CreatedClients")
+
+  managed_projects Project[]
+
+  project_members       ProjectMember[] @relation("UserProjects")
+  added_project_members ProjectMember[] @relation("AddedByProjects")
+
+  created_tasks  Task[] @relation("TaskCreatedBy")
+  approved_tasks Task[] @relation("TaskApprovedBy")
+
+  task_assignments TaskAssignment[] @relation("UserTaskAssignments")
+  assigned_tasks   TaskAssignment[] @relation("TaskAssignedBy")
+  removed_tasks    TaskAssignment[] @relation("TaskRemovedBy")
+
+  uploaded_attachments TaskAttachment[] @relation("TaskAttachmentsUploadedBy")
+  deleted_attachments  TaskAttachment[] @relation("TaskAttachmentsDeletedBy")
+
+  task_comments      TaskComment[]
+  time_logs          TimeLog[]
+  approved_time_logs TimeLog[]     @relation("TimeLogsApprovedBy")
+
+  notifications Notification[]
+  activity_logs ActivityLog[]
+
+  created_projects  Project[] @relation("ProjectCreatedBy")
+  archived_projects Project[] @relation("ProjectArchivedBy")
+
+  team Team? @relation("UserPrimaryTeam", fields: [team_id], references: [team_id], onDelete: SetNull)
+
+  @@map("users")
+}
+
+////////////////
+// CLIENTS //
+////////////////
+
+model Client {
+  client_id    Int     @id @default(autoincrement())
+  agency_id    Int
+  company_name String  @db.VarChar(255)
+  industry     String? @db.VarChar(100)
+  company_size String? @db.VarChar(50)
+  website      String? @db.VarChar(255)
+
+  primary_contact_name  String? @db.VarChar(255)
+  primary_contact_email String? @db.VarChar(255)
+  primary_contact_phone String? @db.VarChar(20)
+
+  address     String?
+  city        String? @db.VarChar(100)
+  state       String? @db.VarChar(100)
+  country     String? @db.VarChar(100)
+  postal_code String? @db.VarChar(20)
+
+  tax_id String? @db.VarChar(50)
+
+  billing_email   String? @db.VarChar(255)
+  billing_address String?
+
+  payment_terms Int? @default(30)
+
+  logo_url             String?
+  brand_colors         Json?
+  brand_guidelines_url String?
+
+  account_manager_id Int?
+
+  onboarding_status String    @default("pending")
+  client_since      DateTime? @db.Date
+
+  portal_enabled Boolean @default(true)
+  portal_user_id Int?
+
+  status    String  @default("active")
+  is_active Boolean @default(true)
+
+  notes String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by Int?
+
+  // ---------- RELATIONS ----------//
+  agency Agency @relation(fields: [agency_id], references: [agency_id])
+
+  //manager User? @relation(fields: [account_manager_id], references: [user_id])
+  manager User? @relation("AccountManagedClients", fields: [account_manager_id], references: [user_id], onDelete: SetNull)
+
+  portal_user User? @relation("PortalClients", fields: [portal_user_id], references: [user_id], onDelete: SetNull)
+
+  creator User? @relation("CreatedClients", fields: [created_by], references: [user_id], onDelete: SetNull)
+
+  projects Project[]
+
+  @@map("clients")
+}
+
+////////////////
+// PROJECTS //
+////////////////
+
+model Project {
+  project_id Int @id @default(autoincrement())
+
+  agency_id Int
+  client_id Int?
+
+  project_name String @db.VarChar(255)
+  project_code String @db.VarChar(50)
+
+  description  String?
+  project_type String? @db.VarChar(100)
+
+  start_date DateTime  @db.Date
+  end_date   DateTime? @db.Date
+
+  estimated_hours Decimal? @db.Decimal(10, 2)
+  actual_hours    Decimal? @default(0) @db.Decimal(10, 2)
+
+  budget_amount   Decimal? @db.Decimal(12, 2)
+  budget_currency String?  @default("USD") @db.VarChar(10)
+  billing_type    String?  @db.VarChar(50)
+
+  project_manager_id Int
+
+  priority String? @default("medium") @db.VarChar(20)
+  status   String? @default("planning") @db.VarChar(50)
+
+  progress_percentage Int? @default(0)
+
+  is_billable Boolean? @default(true)
+  is_public   Boolean? @default(false)
+
+  auto_task_numbering Boolean? @default(true)
+  task_prefix         String?  @db.VarChar(10)
+
+  tags          String[]
+  custom_fields Json?
+  notes         String?
+
+  is_active   Boolean? @default(true)
+  is_archived Boolean? @default(false)
+
+  archived_at DateTime?
+  archived_by Int?
+
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+  created_by Int?
+
+  //-------Relation--------//
+
+  agency         Agency          @relation(fields: [agency_id], references: [agency_id])
+  client         Client?         @relation(fields: [client_id], references: [client_id])
+  manager        User?           @relation(fields: [project_manager_id], references: [user_id])
+  tasks          Task[]
+  projectMembers ProjectMember[]
+
+  time_logs TimeLog[]
+
+  createdBy  User? @relation("ProjectCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
+  archivedBy User? @relation("ProjectArchivedBy", fields: [archived_by], references: [user_id], onDelete: SetNull)
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  member_id       Int       @id @default(autoincrement())
+  project_id      Int
+  user_id         Int
+  role_in_project String?   @db.VarChar(100)
+  hourly_rate     Decimal?  @db.Decimal(10, 2)
+  is_active       Boolean?  @default(true)
+  joined_at       DateTime? @default(now())
+  left_at         DateTime?
+  added_by        Int?
+
+  // Relations
+  project       Project @relation(fields: [project_id], references: [project_id])
+  user          User    @relation("UserProjects", fields: [user_id], references: [user_id])
+  added_by_user User?   @relation("AddedByProjects", fields: [added_by], references: [user_id])
+
+  @@unique([project_id, user_id, is_active])
+  @@map("project_members")
+}
+
+////////////////
+// TASKS //
+////////////////
+
+model Task {
+  task_id Int @id @default(autoincrement())
+
+  project_id     Int
+  parent_task_id Int?
+
+  task_number String? @db.VarChar(50)
+  task_title  String  @db.VarChar(500)
+
+  description String?
+  task_type   String? @db.VarChar(100)
+
+  priority String? @default("medium") @db.VarChar(20)
+  status   String? @default("to_do") @db.VarChar(50)
+
+  progress_percentage Int @default(0)
+
+  start_date DateTime? @db.Date
+  due_date   DateTime? @db.Date
+
+  completed_at DateTime?
+
+  estimated_hours Decimal? @db.Decimal(8, 2)
+  actual_hours    Decimal  @default(0) @db.Decimal(8, 2)
+
+  is_billable  Boolean @default(true)
+  is_milestone Boolean @default(false)
+  is_recurring Boolean @default(false)
+
+  recurrence_pattern Json?
+
+  depends_on  Int[] @default([])
+  blocks      Int[] @default([])
+  assigned_to Int[] @default([])
+
+  assigned_date DateTime?
+
+  visible_to_client        Boolean @default(false)
+  client_approval_required Boolean @default(false)
+  client_approved          Boolean @default(false)
+
+  client_approved_at DateTime?
+  client_approved_by Int?
+
+  tags          String[] @default([])
+  custom_fields Json?
+  checklist     Json?
+
+  created_by Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // -------- Relations -------- //
+
+  project Project @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+
+  parent_task Task?  @relation("TaskHierarchy", fields: [parent_task_id], references: [task_id], onDelete: Cascade)
+  subtasks    Task[] @relation("TaskHierarchy")
+
+  createdBy  User? @relation("TaskCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
+  approvedBy User? @relation("TaskApprovedBy", fields: [client_approved_by], references: [user_id], onDelete: SetNull)
+
+  assignments TaskAssignment[]
+  comments    TaskComment[]
+  attachments TaskAttachment[]
+  timeLogs    TimeLog[]
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  assignment_id Int @id @default(autoincrement())
+
+  task_id     Int
+  user_id     Int
+  assigned_by Int?
+  assigned_at DateTime? @default(now())
+  is_active   Boolean?  @default(true)
+  removed_at  DateTime?
+  removed_by  Int?
+
+  task       Task  @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+  user       User  @relation("UserTaskAssignments", fields: [user_id], references: [user_id], onDelete: Cascade)
+  assignedBy User? @relation("TaskAssignedBy", fields: [assigned_by], references: [user_id], onDelete: SetNull)
+  removedBy  User? @relation("TaskRemovedBy", fields: [removed_by], references: [user_id], onDelete: SetNull)
+
+  @@unique([task_id, user_id, is_active])
+  @@map("task_assignments")
+}
+
+model TaskComment {
+  comment_id        Int       @id @default(autoincrement())
+  task_id           Int
+  parent_comment_id Int?
+  user_id           Int
+  comment_text      String // TEXT
+  mentioned_users   Int[]     @default([]) // Array of user IDs
+  is_edited         Boolean?  @default(false)
+  edited_at         DateTime?
+  is_deleted        Boolean?  @default(false)
+  deleted_at        DateTime?
+  created_at        DateTime? @default(now())
+  updated_at        DateTime? @default(now())
+
+  // Relations
+  task    Task          @relation(fields: [task_id], references: [task_id])
+  user    User?         @relation(fields: [user_id], references: [user_id])
+  parent  TaskComment?  @relation("CommentReplies", fields: [parent_comment_id], references: [comment_id])
+  replies TaskComment[] @relation("CommentReplies")
+
+  @@map("task_comments")
+}
+
+model TaskAttachment {
+  attachment_id Int @id @default(autoincrement())
+
+  task_id            Int
+  file_name          String    @db.VarChar(500)
+  file_original_name String    @db.VarChar(500)
+  file_path          String
+  file_url           String
+  file_size          BigInt
+  file_type          String?   @db.VarChar(100)
+  file_extension     String?   @db.VarChar(20)
+  image_width        Int?
+  image_height       Int?
+  uploaded_by        Int?
+  uploaded_at        DateTime? @default(now())
+  is_deleted         Boolean?  @default(false)
+  deleted_at         DateTime?
+  deleted_by         Int?
+
+  task       Task  @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+  uploadedBy User? @relation("TaskAttachmentsUploadedBy", fields: [uploaded_by], references: [user_id], onDelete: SetNull)
+  deletedBy  User? @relation("TaskAttachmentsDeletedBy", fields: [deleted_by], references: [user_id], onDelete: SetNull)
+
+  @@map("task_attachments")
+}
+
+////////////////
+// TIME LOGS //
+////////////////
+
+model TimeLog {
+  log_id Int @id @default(autoincrement())
+
+  task_id    Int
+  user_id    Int
+  project_id Int
+
+  start_time       DateTime
+  end_time         DateTime?
+  duration_minutes Int?
+  description      String?
+  is_billable      Boolean?  @default(true)
+  hourly_rate      Decimal?  @db.Decimal(10, 2)
+  log_type         String?   @default("automatic") @db.VarChar(20)
+  is_approved      Boolean?  @default(false)
+  approved_by      Int?
+  approved_at      DateTime?
+  is_invoiced      Boolean?  @default(false)
+  invoice_id       Int?
+
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+
+  // -------- Relations -------- //
+  task       Task    @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+  user       User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  project    Project @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  approvedBy User?   @relation("TimeLogsApprovedBy", fields: [approved_by], references: [user_id], onDelete: SetNull)
+
+  @@map("time_logs")
+}
+
+////////////////////
+// NOTIFICATIONS //
+////////////////////
+
+model Notification {
+  notification_id   Int    @id @default(autoincrement())
+  user_id           Int
+  notification_type String @db.VarChar(100)
+  title             String @db.VarChar(500)
+  message           String
+
+  entity_type String? @db.VarChar(50)
+  entity_id   Int?
+  action_url  String?
+
+  is_read Boolean   @default(false)
+  read_at DateTime?
+
+  sent_via_email Boolean   @default(false)
+  email_sent_at  DateTime?
+
+  sent_via_push Boolean   @default(false)
+  push_sent_at  DateTime?
+
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id])
+
+  @@map("notifications")
+}
+
+////////////////////
+// ACTIVITY LOGS //
+////////////////////
+
+model ActivityLog {
+  log_id Int @id @default(autoincrement())
+
+  user_id     Int?
+  user_email  String?   @db.VarChar(255)
+  user_name   String?   @db.VarChar(255)
+  action      String    @db.VarChar(100)
+  entity_type String    @db.VarChar(50)
+  entity_id   Int
+  entity_name String?   @db.VarChar(500)
+  description String?
+  changes     Json?
+  ip_address  String?   @db.VarChar(45)
+  user_agent  String?
+  created_at  DateTime? @default(now())
+
+  user User? @relation(fields: [user_id], references: [user_id])
+
+  @@map("activity_logs")
+}
