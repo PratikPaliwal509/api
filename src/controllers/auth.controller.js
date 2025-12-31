@@ -1,6 +1,6 @@
 const {
   signupService,
-  loginService
+  loginService,
 } = require('../services/auth.service');
 
 const { successResponse, errorResponse } = require('../utils/response');
@@ -25,5 +25,7 @@ const login = async (req, res, next) => {
     next(err);
   }
 };
+
+// ADD MULTIPLE USERS 
 
 module.exports = { signup, login };

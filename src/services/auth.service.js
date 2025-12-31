@@ -52,4 +52,5 @@ const loginService = async (email, password) => {
   return { user, token };
 };
 
+
 module.exports = { signupService, loginService };
