@@ -20,7 +20,8 @@ exports.createRole = async (data) => {
     data: {
       role_name,
       role_description,
-      permissions
+      permissions,
+      // is_system_role
     }
   });
 };
