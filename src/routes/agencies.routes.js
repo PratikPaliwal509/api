@@ -8,6 +8,9 @@ const authMiddleware = require('../middlewares/auth.middleware');
 router.post('/', authMiddleware, agenciesController.createAgency);
 
 // Get agency profile
+router.get('/', authMiddleware, agenciesController.getAgencies);
+
+// Get agency profile
 router.get('/:id', authMiddleware, agenciesController.getAgencyById);
 
 // Update agency

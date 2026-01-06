@@ -21,6 +21,13 @@ exports.createAgency = async (data) => {
   });
 };
 
+exports.getAllAgencies = async () => {
+    return await prisma.agency.findMany({
+        where: { is_active: true },
+        orderBy: { created_at: 'desc' },
+    })
+}
+
 // GET AGENCY BY ID
 exports.getAgencyById = async (id) => {
   const agency = await prisma.agency.findUnique({
@@ -33,6 +40,8 @@ exports.getAgencyById = async (id) => {
 
   return agency;
 };
+
+
 
 // UPDATE AGENCY
 exports.updateAgency = async (id, data) => {

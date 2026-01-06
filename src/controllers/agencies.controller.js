@@ -21,6 +21,18 @@ exports.getAgencyById = async (req, res, next) => {
   }
 };
 
+exports.getAgencies = async (req, res) => {
+    try {
+        const agencies = await agenciesService.getAllAgencies()
+
+        return res.status(200).json(agencies)
+    } catch (error) {
+        console.error('Get agencies error:', error)
+        return res.status(500).json({
+            message: 'Failed to fetch agencies',
+        })
+    }
+}
 // UPDATE AGENCY
 exports.updateAgency = async (req, res, next) => {
   try {

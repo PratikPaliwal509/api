@@ -80,3 +80,35 @@ exports.updateClientStatus = async (id, status) => {
     }
   });
 };
+
+exports.deleteClient = async (clientId, userId) => {
+  if (!clientId) {
+    throw new Error('CLIENT_ID_REQUIRED')
+  }
+
+  // Check client exists
+  const client = await prisma.client.findUnique({
+    where: { client_id: clientId },
+  })
+
+  if (!client) {
+    throw new Error('CLIENT_NOT_FOUND')
+  }
+
+  // OPTIONAL: permission check
+  // if (client.created_by !== userId) {
+  //   throw new Error('UNAUTHORIZED_ACTION')
+  // }
+
+  // Soft delete (recommended)
+  const deletedClient = await prisma.client.update({
+    where: { client_id: clientId },
+    data: {
+      is_active: false,
+      status: 'inactive',
+      updated_at: new Date(),
+    },
+  })
+
+  return deletedClient
+}

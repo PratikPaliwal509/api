@@ -4,7 +4,12 @@ const { successResponse } = require('../utils/response');
 // CREATE CLIENT
 exports.createClient = async (req, res, next) => {
   try {
-    const client = await clientsService.createClient(req.body);
+    const clientData = {
+      ...req.body,
+      created_by: req.user.user_id, // add logged-in user here
+    };
+
+    const client = await clientsService.createClient(clientData);
     return successResponse(res, 'Client created successfully', client);
   } catch (error) {
     next(error);
@@ -56,3 +61,20 @@ exports.updateClientStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.deleteClient = async (req, res, next) => {
+  try {
+    const clientId = parseInt(req.params.id)
+    const userId = req.user?.user_id   // from auth middleware
+
+    if (!clientId) {
+      throw new Error('CLIENT_ID_REQUIRED')
+    }
+
+    const result = await clientsService.deleteClient(clientId, userId)
+
+    return successResponse(res, 'Client deleted successfully', result)
+  } catch (error) {
+    next(error)
+  }
+}

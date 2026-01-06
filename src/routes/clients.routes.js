@@ -41,4 +41,8 @@ router.patch('/:id/status', authMiddleware, logActivity({
     getChanges: (req, res, response) => response?.data || req.body
   }), clientsController.updateClientStatus);
 
+
+  
+// DELETE client Not required currently
+// router.delete('/:id', authMiddleware, clientsController.deleteClient)
 module.exports = router;
