@@ -13,7 +13,7 @@ const teamsRoutes = require('./routes/teams.routes');
 const projectRoutes = require('./routes/project.routes');
 const taskRoutes = require('./routes/task.routes');
 const notificationRoutes = require('./routes/notification.route');
-
+const userService = require('./routes/users.routes');
 app.use(express.json());
 app.use(cors());
 app.use('/api/roles', rolesRoutes);
@@ -32,6 +32,8 @@ app.use('/api/taskAttachments', require('./routes/taskAttachment.route'));
 app.use('/api/tasks/timeLogs', require('./routes/timeLog.route'));
 app.use('/api/notification', notificationRoutes);
 app.use('/api/activityLogs', require('./routes/activityLog.route'));
+
+app.use('/api/users', userService);
 
 app.get("/", (req, res) => {
   res.send("API running");

@@ -18,8 +18,10 @@ router.post('/', authMiddleware,  logActivity({
 router.get('/', authMiddleware, clientsController.getClients);
 
 // Client details
-router.get('/:id', authMiddleware, clientsController.getClientById);
+router.get('/client/:id', authMiddleware, clientsController.getClientById);
 
+
+router.get('/clientsAll', authMiddleware, clientsController.getAllClients)
 // Update client
 router.put('/:id', authMiddleware, logActivity({
     action: 'UPDATE CLIENT',

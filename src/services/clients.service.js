@@ -54,6 +54,20 @@ exports.getClientById = async (id) => {
   return client;
 };
 
+exports.getAllClients = async (agency_id) => {
+  const where = {}
+
+  if (agency_id) {
+    where.agency_id = Number(agency_id)
+  }
+
+  return prisma.client.findMany({
+    where,
+    orderBy: {
+      created_at: 'desc',
+    },
+  })
+}
 // UPDATE CLIENT
 exports.updateClient = async (id, data) => {
   await exports.getClientById(id);

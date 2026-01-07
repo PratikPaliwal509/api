@@ -36,6 +36,36 @@ exports.getClientById = async (req, res, next) => {
   }
 };
 
+exports.getAllClients = async (req, res) => {
+  try {
+    const { agency_id } = req.query
+
+    const clients = await clientsService.getAllClients(agency_id)
+
+    res.status(200).json({
+      success: true,
+      clients,
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+exports.getAllClients = async (req, res) => {
+  try {
+    const { agency_id } = req.query
+
+    const clients = await clientsService.getAllClients(agency_id)
+
+    res.status(200).json({
+      success: true,
+      clients,
+    })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+
 // UPDATE CLIENT
 exports.updateClient = async (req, res, next) => {
   try {
