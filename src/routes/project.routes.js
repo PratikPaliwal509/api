@@ -44,4 +44,8 @@ router.delete('/projects/:id/members/:userId', authMiddleware,  logActivity({
     getChanges: (req) => ({ removed_user_id: Number(req.params.userId) })
   }), projectController.removeProjectMember);
 
+  
+// PATCH /api/projects/:id/status
+router.patch('/projects/:id/status', authMiddleware, projectController.updateProjectStatus)
+
 module.exports = router;

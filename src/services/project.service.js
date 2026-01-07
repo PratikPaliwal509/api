@@ -131,16 +131,50 @@ exports.updateProject = async (projectId, data, userId) => {
   const allowedFields = [
     'project_name',
     'description',
+    'project_type',
+    'project_manager_id',
+    'start_date',
+    'end_date',
+    'estimated_hours',
+    'actual_hours',
     'status',
     'priority',
-    'end_date',
-    'budget_amount'
+    'budget_amount',
+    'budget_currency',
+    'billing_type',
+    'progress_percentage',
+    'is_billable',
+    'is_public',
+    'tags',
+    'custom_fields',
+    'notes',
+    'is_active',
+    'is_archived',
+    'archived_at',
+    'archived_by',
+    'updated_at'
   ];
 
   const updateData = {};
+
   for (const key of allowedFields) {
     if (data[key] !== undefined) {
-      updateData[key] = key === 'end_date' ? new Date(data[key]) : data[key];
+      // Convert dates
+      if (key === 'start_date' || key === 'end_date' || key === 'archived_at' || key === 'updated_at') {
+        updateData[key] = data[key] ? new Date(data[key]) : null;
+      }
+      // Convert booleans
+      else if (key === 'is_billable' || key === 'is_public' || key === 'is_active' || key === 'is_archived') {
+        updateData[key] = Boolean(data[key]);
+      }
+      // Convert numbers/decimals
+      else if (key === 'budget_amount' || key === 'estimated_hours' || key === 'actual_hours' || key === 'progress_percentage') {
+        updateData[key] = data[key] !== '' ? Number(data[key]) : null;
+      }
+      // Everything else
+      else {
+        updateData[key] = data[key];
+      }
     }
   }
 
@@ -164,6 +198,28 @@ exports.updateProject = async (projectId, data, userId) => {
   });
 };
 
+
+exports.updateProjectStatus = async (projectId, status, userId) => {
+  // Optional: check if project exists and belongs to user/agency
+  const project = await prisma.project.findUnique({
+    where: { project_id: projectId },
+  })
+
+  if (!project) {
+    throw new Error('Project not found')
+  }
+
+  // Optional: you can also check if user has permission to update
+  // if (project.agency_id !== userAgencyId) throw new Error('Forbidden')
+
+  // Update only the status field
+  const updatedProject = await prisma.project.update({
+    where: { project_id: projectId },
+    data: { status },
+  })
+
+  return updatedProject
+}
 
 /* ---------------- ADD PROJECT MEMBER ---------------- */
 exports.addProjectMember = async (projectId, userId, addedBy, agencyId) => {

@@ -72,6 +72,27 @@ exports.addProjectMember = async (req, res, next) => {
   }
 };
 
+exports.updateProjectStatus = async (req, res) => {
+  const projectId = parseInt(req.params.id)
+  const { status } = req.body
+  const userId = req.user?.id  // assuming your auth sets req.user
+
+  if (!status) {
+    return res.status(400).json({ success: false, message: 'Status is required' })
+  }
+
+  try {
+    const updatedProject = await projectService.updateProjectStatus(projectId, status, userId)
+    res.json({
+      success: true,
+      message: 'Project status updated successfully',
+      data: updatedProject,
+    })
+  } catch (error) {
+    console.error('Project status update error:', error)
+    res.status(500).json({ success: false, message: error.message || 'Failed to update status' })
+  }
+}
 
 // ---------------- REMOVE MEMBER ----------------
 exports.removeProjectMember = async (req, res, next) => {
