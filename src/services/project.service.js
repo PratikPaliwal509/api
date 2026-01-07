@@ -222,7 +222,7 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
 }
 
 /* ---------------- ADD PROJECT MEMBER ---------------- */
-exports.addProjectMember = async (projectId, userId, addedBy, agencyId) => {
+exports.addProjectMember = async (projectId, userId, addedBy, role, hourly_rate, is_active, agencyId) => {
   if (!isValidNumber(userId)) {
     throwError('VALIDATION_ERROR', 'Invalid user_id', 'user_id');
   }
@@ -259,7 +259,10 @@ exports.addProjectMember = async (projectId, userId, addedBy, agencyId) => {
     data: {
       project_id: projectId,
       user_id: userId,
-      added_by: addedBy
+      added_by: addedBy,
+      role,
+      hourly_rate,
+      is_active,
     }
   });
 };
@@ -281,5 +284,78 @@ exports.removeProjectMember = async (projectId, userId, removedBy) => {
       project_id: projectId,
       user_id: userId
     }
+  });
+};
+
+
+exports.getProjectsManagedByUser = async (userId) => {
+  return await prisma.project.findMany({
+    where: {
+      project_manager_id: userId,
+      is_active: true,
+      is_archived: false,
+    },
+    select: {
+      project_id: true,
+      project_name: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+};
+
+exports.getAvailableUsersForProject = async (
+  projectId,
+  loggedInUserId
+) => {
+  // 1️⃣ Verify project & manager
+  const project = await prisma.project.findFirst({
+    where: {
+      project_id: projectId,
+      project_manager_id: loggedInUserId,
+      is_active: true,
+      is_archived: false,
+    },
+    select: {
+      project_id: true,
+      agency_id: true,
+    },
+  });
+
+  if (!project) {
+    throw new Error("NOT_PROJECT_MANAGER");
+  }
+
+  // 2️⃣ Get already assigned users
+  const existingMembers = await prisma.projectMember.findMany({
+    where: {
+      project_id: projectId,
+      is_active: true,
+    },
+    select: {
+      user_id: true,
+    },
+  });
+
+  const assignedUserIds = existingMembers.map((m) => m.user_id);
+
+  // 3️⃣ Fetch available users
+  return await prisma.user.findMany({
+    where: {
+      agency_id: project.agency_id,
+      is_active: true,
+      user_id: {
+        notIn: assignedUserIds.length ? assignedUserIds : undefined,
+      },
+    },
+    select: {
+      user_id: true,
+      full_name: true,
+      email: true,
+    },
+    orderBy: {
+      full_name: "asc",
+    },
   });
 };

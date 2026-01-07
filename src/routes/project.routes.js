@@ -48,4 +48,13 @@ router.delete('/projects/:id/members/:userId', authMiddleware,  logActivity({
 // PATCH /api/projects/:id/status
 router.patch('/projects/:id/status', authMiddleware, projectController.updateProjectStatus)
 
+
+
+router.get("/project/managed", authMiddleware, projectController.getManagedProjects);
+router.get(
+  "/projects/:project_id/users",
+  authMiddleware,
+  projectController.getProjectUsers
+);
+
 module.exports = router;

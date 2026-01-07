@@ -107,3 +107,49 @@ exports.removeProjectMember = async (req, res, next) => {
     next(err);
   }
 };
+
+
+exports.getManagedProjects = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const projects = await projectService.getProjectsManagedByUser(userId);
+
+    return res.status(200).json(projects);
+  } catch (error) {
+    console.error("Controller Error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch managed projects",
+    });
+  }
+};
+
+exports.getProjectUsers = async (req, res) => {
+  try {
+    const projectId = Number(req.params.project_id);
+    const loggedInUserId = req.user.user_id;
+
+    if (!projectId) {
+      return res.status(400).json({ message: "Invalid project id" });
+    }
+
+    const users = await projectService.getAvailableUsersForProject(
+      projectId,
+      loggedInUserId
+    );
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error("Controller Error:", error);
+
+    if (error.message === "NOT_PROJECT_MANAGER") {
+      return res.status(403).json({
+        message: "You are not allowed to access this project",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Failed to fetch project users",
+    });
+  }
+};
