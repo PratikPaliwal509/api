@@ -18,7 +18,8 @@ const createTask = async (data, userId) => {
       estimated_hours: data.estimated_hours,
       is_milestone: data.is_milestone,
       is_billable: data.is_billable,
-      created_by: userId
+      created_by: userId,
+      tags: data.labels || []
     }
   });
 };
@@ -84,33 +85,47 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
     throw new Error('user_ids must be a non-empty array');
   }
 
-  // normalize and validate IDs
-  const ids = userIds.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0);
+  const ids = userIds
+    .map((id) => Number(id))
+    .filter((n) => Number.isInteger(n) && n > 0);
+
   if (ids.length === 0) throw new Error('No valid user IDs provided');
 
-  // ensure task exists
   const task = await prisma.task.findUnique({ where: { task_id: taskId } });
   if (!task) throw new Error('Task not found');
 
-  // ensure users exist
-  const users = await prisma.user.findMany({ where: { user_id: { in: ids } }, select: { user_id: true } });
+  const users = await prisma.user.findMany({
+    where: { user_id: { in: ids } },
+    select: { user_id: true },
+  });
+
   const foundIds = users.map((u) => u.user_id);
   const missing = ids.filter((id) => !foundIds.includes(id));
   if (missing.length > 0) {
     throw new Error(`Invalid user IDs: ${missing.join(',')}`);
   }
 
+  // create task assignments
   const assignments = foundIds.map((userId) => ({
     task_id: taskId,
     user_id: userId,
-    assigned_by: assignedBy
+    assigned_by: assignedBy,
   }));
 
-  return prisma.taskAssignment.createMany({
+  await prisma.taskAssignment.createMany({
     data: assignments,
-    skipDuplicates: true
+    skipDuplicates: true,
   });
+
+  // update task.assigned_to as JSON array of all assigned users
+  await prisma.task.update({
+    where: { task_id: taskId },
+    data: { assigned_to: foundIds, assigned_date: new Date(), },
+  });
+
+  return { success: true, assigned_user_ids: foundIds };
 };
+
 
 /**
  * Change Task Status

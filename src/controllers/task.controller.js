@@ -9,6 +9,7 @@ const createTask = async (req, res) => {
     const task = await taskService.createTask(req.body, req.user.user_id);
     return successResponse(res, 'Task created successfully', task, 201);
   } catch (err) {
+    console.error(err);
     return errorResponse(res, err.message);
   }
 };
