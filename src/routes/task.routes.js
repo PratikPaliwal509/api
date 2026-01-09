@@ -58,5 +58,5 @@ router.post('/:taskId/subtasks', logActivity({
 // Get subtasks of a task
 router.get('/:taskId/subtasks', taskController.getSubtasks);
 
-
+router.post('/:taskId/checklist', taskController.addTaskChecklist)
 module.exports = router;

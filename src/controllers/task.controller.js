@@ -71,6 +71,7 @@ const assignUsers = async (req, res) => {
 
     return successResponse(res, 'Users assigned to task');
   } catch (err) {
+    console.log(err)
     return errorResponse(res, err.message);
   }
 };
@@ -128,6 +129,32 @@ const getSubtasks = async (req, res) => {
   }
 };
 
+const addTaskChecklist = async (req, res) => {
+  try {
+    const { taskId } = req.params
+    const { checklist } = req.body
+
+    if (!Array.isArray(checklist)) {
+      return res.status(400).json({
+        message: 'Checklist must be an array'
+      })
+    }
+
+    const task = await taskService.addChecklistToTask(Number(taskId), checklist)
+
+    res.status(200).json({
+      message: 'Checklist added successfully',
+      data: task
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      message: 'Failed to add checklist'
+    })
+  }
+}
+
+
 module.exports = {
   createTask,
   getTasks,
@@ -136,5 +163,6 @@ module.exports = {
   assignUsers,
   changeStatus,
   createSubtask,
-  getSubtasks
+  getSubtasks,
+  addTaskChecklist
 };

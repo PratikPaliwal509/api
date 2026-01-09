@@ -52,6 +52,7 @@ const createReply = async (req, res) => {
     );
     return successResponse(res, 'Reply added successfully', reply, 201);
   } catch (err) {
+    console.log(err)
     return errorResponse(res, err.message);
   }
 };

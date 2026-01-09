@@ -157,6 +157,25 @@ const getSubtasksByTaskId = async (taskId) => {
   });
 };
 
+const addChecklistToTask = async (taskId, checklist) => {
+  // Ensure task exists
+  const task = await prisma.task.findUnique({
+    where: { task_id: taskId }
+  })
+
+  if (!task) {
+    throw new Error('Task not found')
+  }
+
+  // Update checklist JSON
+  return prisma.task.update({
+    where: { task_id: taskId },
+    data: {
+      checklist
+    }
+  })
+}
+
 module.exports = {
   createTask,
   getTasks,
@@ -164,5 +183,6 @@ module.exports = {
   updateTask,
   assignUsers,
   changeStatus,
-  getSubtasksByTaskId
+  getSubtasksByTaskId,
+  addChecklistToTask
 };
