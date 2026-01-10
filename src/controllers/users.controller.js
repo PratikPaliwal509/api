@@ -68,3 +68,33 @@ exports.getManagersByAgency = async (req, res) => {
   }
 }
 
+// controllers/users.controller.js
+exports.getUsersBySameAgency = async (req, res, next) => {
+  try {
+    // 1️⃣ Get userId from token
+    const userId = req.user.user_id
+console.log("userId"+userId)
+// 2️⃣ Fetch logged-in user to get agency_id
+const loggedInUser = await usersService.getUserById(userId)
+console.log("loggedInUser"+loggedInUser)
+
+    if (!loggedInUser || !loggedInUser.agency_id) {
+      return res.status(400).json({
+        message: 'Agency not found for this user',
+      })
+    }
+
+    // 3️⃣ Fetch users with SAME agency_id
+    const users = await usersService.getUsersByAgencyId(
+      loggedInUser.agency_id
+    )
+
+    return res.status(200).json({
+      success: true,
+      data: users,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+

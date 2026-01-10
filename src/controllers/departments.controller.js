@@ -1,10 +1,25 @@
 const departmentsService = require('../services/departments.service');
 const { successResponse } = require('../utils/response');
-
+const usersService  = require('../services/users.service')
 // CREATE DEPARTMENT
 exports.createDepartment = async (req, res, next) => {
   try {
-    const department = await departmentsService.createDepartment(req.body);
+   
+    const userId = req.user.user_id
+console.log(userId)
+    // ✅ 2. Fetch user to get agency_id
+    const user = await usersService.getUserById(userId)
+
+    if (!user || !user.agency_id) {
+      return res.status(400).json({
+        message: 'Agency not found for this user',
+      })
+    }
+    const departmentData = {
+      ...req.body,
+      agency_id: user.agency_id,
+    }
+     const department = await departmentsService.createDepartment(departmentData);
     return successResponse(res, 'Department created successfully', department);
   } catch (error) {
     next(error);

@@ -6,6 +6,13 @@ exports.getAllUsers = async () => {
   })
 }
 
+exports.getUserById = async (userId) => {
+  return prisma.user.findUnique({
+    where: { user_id: userId },
+    select: { agency_id: true, user_id: true },
+  })
+}
+
 exports.getUsersByAgencyId = async (agencyId) => {
     return prisma.user.findMany({
         where: {
@@ -45,5 +52,19 @@ exports.getManagersByAgencyId = async (agencyId) => {
         },
       },
     },
+  })
+}
+
+exports.getUsersByAgencyId = async (agencyId) => {
+  return prisma.user.findMany({
+    where: { agency_id: agencyId },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      role: true,
+    },
+    orderBy: { first_name: 'asc' },
   })
 }
