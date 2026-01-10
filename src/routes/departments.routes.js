@@ -11,8 +11,8 @@ router.post('/', authMiddleware, departmentsController.createDepartment);
 router.get('/agency/:agencyId', authMiddleware, departmentsController.getDepartmentsByAgency);
 
 // Get department by id
-router.get('/:id', authMiddleware, departmentsController.getDepartmentById);
-
+router.get('/', authMiddleware, departmentsController.getAllDepartments)
+router.get('/only-one/:id', authMiddleware, departmentsController.getDepartmentById);
 // Update department
 router.put('/:id', authMiddleware, departmentsController.updateDepartment);
 

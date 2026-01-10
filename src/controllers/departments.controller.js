@@ -23,6 +23,27 @@ exports.getDepartmentsByAgency = async (req, res, next) => {
   }
 };
 
+exports.getAllDepartments = async (req, res) => {
+    try {
+      const userId = req.user.user_id;
+      console.log("req.user.user_id"+req.user.user_id)
+      // console.log(JSON.stringify(req))
+        const departments = await departmentsService.getAllDepartments(userId)
+
+        return res.status(200).json({
+            success: true,
+            message: 'Departments fetched successfully',
+            data: departments,
+        })
+    } catch (error) {
+        console.error('Get Departments Error:', error)
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch departments',
+        })
+    }
+}
 // GET DEPARTMENT BY ID
 exports.getDepartmentById = async (req, res, next) => {
   try {

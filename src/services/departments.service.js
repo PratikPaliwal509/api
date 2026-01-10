@@ -32,6 +32,35 @@ exports.createDepartment = async (data) => {
   });
 };
 
+exports.getAllDepartments = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+    select: { agency_id: true },
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+  return await prisma.department.findMany({
+    where: {
+      agency_id: user.agency_id,
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+    include: {
+      teams: {
+        where: {
+          agency_id: user.agency_id, // filter teams by same agency
+        },
+        select: {
+          team_id: true,
+          team_name: true,
+        },
+      },
+    },
+  })
+}
 // GET DEPARTMENTS BY AGENCY
 exports.getDepartmentsByAgency = async (agencyId) => {
   return prisma.department.findMany({
@@ -47,7 +76,21 @@ exports.getDepartmentsByAgency = async (agencyId) => {
 // GET DEPARTMENT BY ID
 exports.getDepartmentById = async (id) => {
   const department = await prisma.department.findUnique({
-    where: { department_id: Number(id) }
+    where: { department_id: Number(id) },
+     include: {
+      teams: {
+        select: {
+          team_id: true,
+          team_name: true,
+        },
+      },
+      // agency: {
+      //   select: {
+      //             agency_id: true,
+      //     agency_name: true,
+      //   },
+      // },
+    },
   });
 
   if (!department) {
