@@ -1,10 +1,25 @@
 const teamsService = require('../services/teams.service');
 const { successResponse } = require('../utils/response');
-
+const usersService = require('../services/users.service')
 // CREATE TEAM
+
 exports.createTeam = async (req, res, next) => {
   try {
-    const team = await teamsService.createTeam(req.body);
+    const userId = req.user.user_id;
+
+    const user = await usersService.getUserById(userId);
+    if (!user || !user.agency_id) {
+      return res.status(400).json({
+        message: 'Agency not found for this user',
+      });
+    }
+
+    const teamData = {
+      ...req.body,
+      agency_id: user.agency_id,
+    };
+
+    const team = await teamsService.createTeam(teamData);
     return successResponse(res, 'Team created successfully', team);
   } catch (error) {
     next(error);
@@ -65,6 +80,26 @@ exports.updateTeamLead = async (req, res, next) => {
       req.body.team_lead_id
     );
     return successResponse(res, 'Team lead updated successfully', team);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.addTeamMembers = async (req, res, next) => {
+  try {
+    const { team_id } = req.params;
+    const { user_ids } = req.body;
+
+    const result = await teamsService.addTeamMembers({
+      team_id,
+      user_ids
+    });
+
+    return successResponse(
+      res,
+      'Team members added successfully',
+      result
+    );
   } catch (error) {
     next(error);
   }

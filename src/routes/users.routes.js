@@ -13,5 +13,8 @@ router.get(
 )
 
 router.get('/by-agency', authMiddleware, usersController.getAgencyUsers)
-router.get('/managers/:agencyId', usersController.getManagersByAgency)
+router.get('/managers/:agencyId',authMiddleware, usersController.getManagersByAgency)
+
+router.get('/users/without-team', authMiddleware, usersController.getUsersWithoutTeam)
+
 module.exports = router

@@ -55,4 +55,11 @@ router.patch('/:id/team-lead', authMiddleware, logActivity({
     })
   }), teamsController.updateTeamLead);
 
+
+  router.post(
+  '/:team_id/members',
+  authMiddleware,
+  teamsController.addTeamMembers
+);
+
 module.exports = router;

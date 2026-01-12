@@ -98,3 +98,25 @@ console.log("loggedInUser"+loggedInUser)
   }
 }
 
+// users.controller.js
+exports.getUsersWithoutTeam = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id
+const loggedInUser = await usersService.getUserById(userId)
+console.log("loggedInUser"+loggedInUser)
+
+    if (!loggedInUser || !loggedInUser.agency_id) {
+      return res.status(400).json({
+        message: 'Agency not found for this user',
+      })
+    }
+    const users = await usersService.getUsersWithoutTeam(loggedInUser.agency_id)
+
+    res.json({
+      success: true,
+      data: users,
+    })
+  } catch (err) {
+    next(err)
+  }
+}

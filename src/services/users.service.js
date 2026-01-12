@@ -62,9 +62,38 @@ exports.getUsersByAgencyId = async (agencyId) => {
       user_id: true,
       first_name: true,
       last_name: true,
+      team_id:true,
       email: true,
       role: true,
     },
     orderBy: { first_name: 'asc' },
   })
 }
+
+// users.service.js
+exports.getUsersWithoutTeam = async (agency_id) => {
+  return prisma.user.findMany({
+    where: {
+      agency_id: Number(agency_id),
+      team_id: null,          // ❌ Not in any team
+      is_active: true,
+
+      // ❌ Exclude users who are team leads
+      NOT: {
+        lead_of_teams: {
+          some: {},          // user is team_lead in any team
+        },
+      },
+    },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+    },
+    orderBy: {
+      first_name: 'asc',
+    },
+  })
+}
+
