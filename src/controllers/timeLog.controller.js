@@ -1,22 +1,125 @@
 const timeLogService = require('../services/timeLog.service');
 const { successResponse, errorResponse } = require('../utils/response');
 
+// 
+const getActiveTimer = async (req, res) => {
+  try {
+    const { taskId } = req.params
+    const userId = req.user.user_id
+
+    const log = await timeLogService.getActiveTimeLog({
+      taskId,
+      userId
+    })
+
+    res.status(200).json(log)
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch active timer" })
+  }
+}
+
+// START timer
+const startTimer = async (req, res) => {
+  try {
+    const { taskId, project_id } = req.body
+    const userId = req.user.user_id
+    console.log(project_id)
+    if (!taskId || !project_id) {
+      return res
+        .status(400)
+        .json({ message: "taskId and projectId are required" })
+    }
+
+    const log = await timeLogService.startTimeLog({
+      taskId,
+      userId,
+      project_id
+    })
+
+    res.status(201).json(log)
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: "Failed to start timer" })
+  }
+}
+
+// STOP timer
+const stopTimer = async (req, res) => {
+  try {
+    const { logId } = req.body
+    const userId = req.user.user_id
+    console.log("stop"+userId)
+    if (!logId) {
+      console.log("logid not found")
+      return res.status(400).json({ message: "logId is required" })
+    }
+
+    const log = await timeLogService.stopTimeLog({
+      logId,
+      userId
+    })
+console.log(log)
+    if (!log) {
+      console.log("active log not found")
+      return res.status(404).json({ message: "Active log not found" })
+    }
+
+    res.status(200).json(log)
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: "Failed to stop timer" })
+  }
+}
+
+
+const createOrUpdateTimeLog = async (req, res) => {
+  try {
+    const taskId = Number(req.params.taskId)
+    const userId = req.user.user_id // 👈 from token
+
+    const timeLog = await timeLogService.createOrUpdateTimeLog(
+      taskId,
+      userId,
+      req.body
+    )
+
+    return successResponse(
+      res,
+      'Time log saved successfully',
+      timeLog,
+      201
+    )
+  } catch (err) {
+    return errorResponse(res, err.message)
+  }
+}
+// 
 // POST /tasks/:taskId/time-logs
 const createTimeLog = async (req, res) => {
   try {
-    const taskId = Number(req.params.taskId);
+    const taskId = Number(req.params.taskId)
+
+    // ✅ user_id comes from token
+    const userId = req.user.user_id
 
     const timeLog = await timeLogService.createTimeLog(
       taskId,
       req.body,
-      req.user.user_id
-    );
+      userId
+    )
 
-    return successResponse(res, 'Time log created successfully', timeLog, 201);
+    return successResponse(
+      res,
+      "Time log created successfully",
+      timeLog,
+      201
+    )
   } catch (err) {
-    return errorResponse(res, err.message);
+    console.log(err)
+    return errorResponse(res, err.message)
   }
-};
+}
+
 
 // GET /tasks/:taskId/time-logs
 const getTaskTimeLogs = async (req, res) => {
@@ -77,6 +180,10 @@ const approveTimeLog = async (req, res) => {
 };
 
 module.exports = {
+  getActiveTimer,
+  startTimer,
+  stopTimer,
+createOrUpdateTimeLog,
   createTimeLog,
   getTaskTimeLogs,
   updateTimeLog,

@@ -5,8 +5,12 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const logActivity = require('../middlewares/activityLog.middleware');
 const projectController = require('../controllers/project.controller');
 
+router.get("/notes", authMiddleware, projectController.getProjectNotes)
 // Project CRUD
-router.post('/projects', authMiddleware, logActivity({
+router.post('/notes', authMiddleware, projectController.addProjectNote)
+
+router.get("/without-notes", authMiddleware, projectController.getProjectsWithoutNotes)
+router.post('/', authMiddleware, logActivity({
     action: 'CREATE',
     entityType: 'Project',
     getEntityId: (req, res, body) => body.data.project_id,
@@ -14,11 +18,11 @@ router.post('/projects', authMiddleware, logActivity({
     getChanges: (req, res, body) => body.data
   }), projectController.createProject);
 
-router.get('/projects', authMiddleware, projectController.getProjects);
+router.get('/', authMiddleware, projectController.getProjects);
 
-router.get('/projects/:id', authMiddleware, projectController.getProjectById);
+router.get('/:id', authMiddleware, projectController.getProjectById);
 
-router.put('/projects/:id', authMiddleware, logActivity({
+router.put('/:id', authMiddleware, logActivity({
     action: 'UPDATE',
     entityType: 'Project',
     getEntityId: (req, res, body) => body.data.project_id,
@@ -27,7 +31,7 @@ router.put('/projects/:id', authMiddleware, logActivity({
   }),projectController.updateProject);
 
 // Members
-router.post('/projects/:id/members', authMiddleware, logActivity({
+router.post('/:id/members', authMiddleware, logActivity({
     action: 'ADD MEMBER',
     entityType: 'Project',
     getEntityId: (req, res, body) => body.data.project_id,
@@ -35,7 +39,7 @@ router.post('/projects/:id/members', authMiddleware, logActivity({
     getChanges: (req, res, body) => body.data
   }), projectController.addProjectMember);
 
-router.delete('/projects/:id/members/:userId', authMiddleware,  logActivity({
+router.delete('/:id/members/:userId', authMiddleware,  logActivity({
     action: 'REMOVE MEMBER',
     entityType: 'Project',
     getEntityId: (req) => Number(req.params.id),
@@ -46,15 +50,16 @@ router.delete('/projects/:id/members/:userId', authMiddleware,  logActivity({
 
   
 // PATCH /api/projects/:id/status
-router.patch('/projects/:id/status', authMiddleware, projectController.updateProjectStatus)
+router.patch('/:id/status', authMiddleware, projectController.updateProjectStatus)
 
 
 
 router.get("/project/managed", authMiddleware, projectController.getManagedProjects);
 router.get(
-  "/projects/:project_id/users",
+  "/:project_id/users",
   authMiddleware,
   projectController.getProjectUsers
 );
+
 
 module.exports = router;

@@ -20,11 +20,13 @@ const addAttachment = async (req, res) => {
 const getAttachments = async (req, res) => {
   try {
     const taskId = Number(req.params.id);
-
+console.log("taskId"+ taskId)
+console.log("params"+ JSON.stringify(req.params))
     const attachments = await attachmentService.getAttachmentsByTask(taskId);
 
     return successResponse(res, 'Attachments fetched successfully', attachments);
   } catch (err) {
+    console.log(err)
     return errorResponse(res, err.message);
   }
 };

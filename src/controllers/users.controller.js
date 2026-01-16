@@ -1,5 +1,31 @@
 const usersService = require('../services/users.service')
 
+
+exports.getUserByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await usersService.getUserById(Number(id));
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Get User By ID Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 // GET ALL USERS
 exports.getAllUsers = async (req, res) => {
   try {

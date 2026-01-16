@@ -14,6 +14,10 @@ router.post('/', authMiddleware,  logActivity({
     getChanges: (req, res, response) => response?.data
   }), clientsController.createClient);
 
+  
+  router.get("/notes", authMiddleware, clientsController.getClientNotes)
+
+  router.get("/without-notes", authMiddleware, clientsController.getClientsWithoutNotes)
 // List clients
 router.get('/', authMiddleware, clientsController.getClients);
 

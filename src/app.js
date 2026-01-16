@@ -24,12 +24,12 @@ app.use('/api/departments', departmentsRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/teams', teamsRoutes);
 // app.use('/api/users', usersRoutes);
-app.use('/api', projectRoutes);
+app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 
 app.use('/api/tasksComments', require('./routes/taskComment.route'));
 app.use('/api/taskAttachments', require('./routes/taskAttachment.route'));
-app.use('/api/tasks/timeLogs', require('./routes/timeLog.route'));
+app.use('/api/tasks/timelogs', require('./routes/timeLog.route'));
 app.use('/api/notification', notificationRoutes);
 app.use('/api/activityLogs', require('./routes/activityLog.route'));
 

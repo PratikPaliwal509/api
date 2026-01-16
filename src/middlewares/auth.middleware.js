@@ -43,7 +43,19 @@ module.exports = async (req, res, next) => {
       select: {
         user_id: true,
         email: true,
-        full_name: true
+        full_name: true,
+        role: {            // ✅ JOIN
+          select: {
+            role_id: true,
+            role_name: true
+          }
+        },
+        agency: {            // ✅ JOIN
+          select: {
+            agency_id: true,
+            agency_name: true
+          }
+        }
       }
     });
 

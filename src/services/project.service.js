@@ -359,3 +359,76 @@ exports.getAvailableUsersForProject = async (
     },
   });
 };
+
+
+exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
+  const where = {
+    notes: { not: null }
+  }
+
+  // 🔥 SUPER ADMIN → ALL NOTES (no filters)
+  if (role.role_name === "Super Admin") {
+    // no additional filters
+  }
+
+  // 🔥 ADMIN → AGENCY NOTES
+  else if (role.role_name === "Admin") {
+    where.agency_id = agency.agency_id
+  }
+
+  // 🔥 USER / QA / DEVELOPER → OWN NOTES
+  else {
+    where.agency_id = agency.agency_id
+    where.created_by = user_id
+  }
+
+  return prisma.project.findMany({
+    where,
+    select: {
+      project_id: true,
+      project_name:true,
+      notes: true,
+      created_at: true,
+      updated_at: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  })
+}
+
+exports.addProjectNoteService = async ({ project_id, title, notes, userId }) => {
+    if (!project_id) throw new Error("Project ID is required")
+    return prisma.project.update({
+        where: { project_id },
+        data: {
+            notes,
+            updated_at: new Date(),
+            created_by: userId // optional
+        }
+    })
+}
+exports.getProjectsWithoutNotesService = async (agency_id) => {
+  return prisma.project.findMany({
+    where: {
+      agency_id,
+      is_active: true,
+      is_archived: false,
+      OR: [
+        { notes: null },
+        { notes: "" },
+      ],
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+    select: {
+      project_id: true,
+      project_name: true,
+      project_code: true,
+      client_id: true,
+      notes: true,
+      created_at: true,
+    },
+  })
+}

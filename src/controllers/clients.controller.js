@@ -108,3 +108,34 @@ exports.deleteClient = async (req, res, next) => {
     next(error)
   }
 }
+
+exports.getClientNotes = async (req, res) => {
+  try {
+    console.log("users req"+JSON.stringify(req.user))
+    const notes = await clientsService.fetchClientNotesService(req.user)
+    res.status(200).json(notes)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "Failed to fetch client notes" })
+  }
+}
+
+exports.getClientsWithoutNotes = async (req, res) => {
+  try {
+    const agency_id = req.user.agency_id // from auth middleware
+
+    const clients = await clientsService.getClientsWithoutNotesService(agency_id)
+
+    return res.status(200).json({
+      success: true,
+      data: clients,
+    })
+  } catch (error) {
+    console.error("Get clients without notes error:", error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch clients without notes",
+    })
+  }
+}

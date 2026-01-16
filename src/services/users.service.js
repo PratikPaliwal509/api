@@ -9,7 +9,23 @@ exports.getAllUsers = async () => {
 exports.getUserById = async (userId) => {
   return prisma.user.findUnique({
     where: { user_id: userId },
-    select: { agency_id: true, user_id: true },
+    select: { agency_id: true, user_id: true,
+      full_name: true,
+      email: true,
+      role_id: true,
+      role: {
+        select: {
+          role_id: true,
+          role_name: true,
+        },
+      },
+      department: {
+        select: {
+          department_id: true,
+          department_name: true,
+        },
+      },
+     },
   })
 }
 

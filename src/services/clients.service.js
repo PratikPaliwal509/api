@@ -126,3 +126,55 @@ exports.deleteClient = async (clientId, userId) => {
 
   return deletedClient
 }
+
+exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
+
+  const where = {
+    notes: { not: null }
+  }
+
+  // 🔥 SUPER ADMIN → ALL NOTES (no filters)
+  if (role.role_name === "Super Admin") {
+    // no additional filters
+  }
+
+  // 🔥 ADMIN → AGENCY NOTES
+  else if (role.role_name === "Admin") {
+    where.agency_id = agency.agency_id
+  }
+
+  // 🔥 USER / QA / DEVELOPER → OWN NOTES
+  else {
+    where.agency_id = agency.agency_id
+    where.created_by = user_id
+  }
+
+  return prisma.client.findMany({
+    where,
+    select: {
+      client_id: true,
+      company_name: true,
+      notes: true,
+      created_at: true,
+      updated_at: true,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  })
+}
+
+exports.getClientsWithoutNotesService = async (agency_id) => {
+  return prisma.client.findMany({
+    where: {
+      agency_id,
+      OR: [
+        { notes: null },
+        { notes: "" },
+      ],
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  })
+}

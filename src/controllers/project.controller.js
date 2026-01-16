@@ -153,3 +153,51 @@ exports.getProjectUsers = async (req, res) => {
     });
   }
 };
+
+exports.getProjectNotes = async (req, res) => {
+  try {
+    console.log(req.user)
+    const notes = await projectService.fetchProjectNotesService(req.user)
+    res.status(200).json(notes)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: "Failed to fetch project notes" })
+  }
+}
+
+exports.addProjectNote = async (req, res) => {
+    try {
+        const { project_id, title, notes } = req.body
+        const userId = req.user.user_id
+
+        if (!title || !notes) {
+            return res.status(400).json({ success: false, message: "Title and notes are required" })
+        }
+
+        const updatedProject = await projectService.addProjectNoteService({ project_id, title, notes, userId })
+
+        res.json({ success: true, data: updatedProject, message: "Note added to project successfully" })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ success: false, message: err.message || "Something went wrong" })
+    }
+}
+
+exports.getProjectsWithoutNotes = async (req, res) => {
+  try {
+    const agency_id = req.user.agency.agency_id // from auth middleware
+    const projects = await projectService.getProjectsWithoutNotesService(agency_id)
+
+    return res.status(200).json({
+      success: true,
+      data: projects,
+    })
+  } catch (error) {
+    console.error("Get projects without notes error:", error)
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch projects without notes",
+    })
+  }
+}

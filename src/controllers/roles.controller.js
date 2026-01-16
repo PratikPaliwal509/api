@@ -7,6 +7,7 @@ exports.createRole = async (req, res, next) => {
     const role = await rolesService.createRole(req.body);
     return successResponse(res, 'Role created successfully', role);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
