@@ -146,3 +146,59 @@ console.log("loggedInUser"+loggedInUser)
     next(err)
   }
 }
+
+exports.createUser = async (req, res) => {
+  try {
+    const {
+      first_name,
+      last_name,
+      email,
+      password,
+      confirm_password,
+      role_id,
+      department_id
+    } = req.body;
+
+    // Required field validation
+    if (
+      !first_name ||
+      !last_name ||
+      !email ||
+      !password ||
+      !confirm_password ||
+      !role_id ||
+      !department_id
+    ) {
+      return res.status(400).json({
+        message: "All required fields must be provided"
+      });
+    }
+
+    if (password !== confirm_password) {
+      return res.status(400).json({
+        message: "Password and confirm password do not match"
+      });
+    }
+
+    const user = await userService.createUser({
+      first_name,
+      last_name,
+      email,
+      password,
+      role_id,
+      department_id,
+      created_by: req.user?.user_id || null // optional (from auth middleware)
+    });
+
+    return res.status(201).json({
+      message: "User created successfully",
+      data: user
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: error.message || "Internal server error"
+    });
+  }
+};

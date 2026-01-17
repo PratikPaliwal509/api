@@ -52,7 +52,6 @@ const createNotification = async (req, res) => {
   try {
     const notification = await NotificationService.createNotification(req.body)
 
-    // 🔔 REAL-TIME SOCKET EMIT (ONLY ADDITION)
     if (req.io && notification?.user_id) {
       req.io
         .to(`user_${notification.user_id}`)

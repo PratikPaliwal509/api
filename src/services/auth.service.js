@@ -40,17 +40,32 @@ const full_name = `${first_name} ${last_name}`;
 };
 
 // ---------------- Login Service ----------------
-const loginService = async (email, password) => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error('INVALID_CREDENTIALS');
+const loginService = async (email, password, login_ip) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  })
 
-  const isValid = await bcrypt.compare(password, user.password_hash);
-  if (!isValid) throw new Error('INVALID_CREDENTIALS');
+  if (!user) throw new Error('INVALID_CREDENTIALS')
 
-  const token = generateToken({ user_id: user.user_id });
+  const isValid = await bcrypt.compare(password, user.password_hash)
+  if (!isValid) throw new Error('INVALID_CREDENTIALS')
 
-  return { user, token };
-};
+  // ✅ Update last login info AFTER successful auth
+  const updatedUser = await prisma.user.update({
+    where: { user_id: user.user_id },
+    data: {
+      last_login_at: new Date(),
+      last_login_ip: login_ip,
+    },
+  })
+
+  const token = generateToken({ user_id: updatedUser.user_id })
+
+  return {
+    user: updatedUser,
+    token,
+  }
+}
 
 
 module.exports = { signupService, loginService };

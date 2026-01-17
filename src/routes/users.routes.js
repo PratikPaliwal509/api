@@ -5,13 +5,10 @@ const authMiddleware = require('../middlewares/auth.middleware')
 
 // GET ALL USERS
 router.get('/user', authMiddleware, usersController.getAllUsers)
+router.post("/users", authMiddleware, usersController.createUser);
 // routes/users.routes.js
 
-router.get(
-  '/users/by-agency',
-  authMiddleware, // JWT middleware
-  usersController.getUsersBySameAgency
-)
+router.get('/users/by-agency', authMiddleware, usersController.getUsersBySameAgency)
 
 router.get('/by-agency', authMiddleware, usersController.getAgencyUsers)
 router.get('/managers/:agencyId',authMiddleware, usersController.getManagersByAgency)

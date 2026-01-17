@@ -59,13 +59,18 @@ exports.updateProject = async (req, res, next) => {
 // ---------------- ADD MEMBER ----------------
 exports.addProjectMember = async (req, res, next) => {
   try {
+    console.log(req.body.hourly_rate)
+    console.log(req.body.role_in_project)
+    console.log(req.body.role)
     const project = await projectService.addProjectMember(
       Number(req.params.id),
       Number(req.body.user_id),
       req.user.user_id,
-      req.user.agency_id // ✅ CORRECT
+      req.user.agency_id, // ✅ CORRECT
+      req.body.role_in_project,
+      req.body.hourly_rate,
     );
-
+console.log("project"+JSON.stringify(project))
     return successResponse(res, 'PROJECT_MEMBER_ADDED', project);
   } catch (err) {
     next(err);

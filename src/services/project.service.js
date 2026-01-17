@@ -222,7 +222,7 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
 }
 
 /* ---------------- ADD PROJECT MEMBER ---------------- */
-exports.addProjectMember = async (projectId, userId, addedBy, role, hourly_rate, is_active, agencyId) => {
+exports.addProjectMember = async (projectId, userId, addedBy,role,  role_in_project,  hourly_rate, is_active, agencyId) => {
   if (!isValidNumber(userId)) {
     throwError('VALIDATION_ERROR', 'Invalid user_id', 'user_id');
   }
@@ -260,7 +260,7 @@ exports.addProjectMember = async (projectId, userId, addedBy, role, hourly_rate,
       project_id: projectId,
       user_id: userId,
       added_by: addedBy,
-      role,
+      role_in_project,
       hourly_rate,
       is_active,
     }

@@ -16,15 +16,24 @@ const signup = async (req, res, next) => {
 };
 
 // ---------------- Login ----------------
+// ---------------- Login ----------------
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const result = await loginService(email, password);
-    return successResponse(res, 'Login successful', result);
+    const { email, password } = req.body
+
+    // ✅ Secure IP detection (supports proxy / load balancer)
+    const login_ip =
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.socket.remoteAddress
+
+    const result = await loginService(email, password, login_ip)
+
+    return successResponse(res, 'Login successful', result)
   } catch (err) {
-    next(err);
+    next(err)
   }
-};
+}
+
 
 // ADD MULTIPLE USERS 
 
