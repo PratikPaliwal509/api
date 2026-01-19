@@ -37,6 +37,7 @@ const getTaskById = async (req, res) => {
     }
     return successResponse(res, 'Task details fetched', task);
   } catch (err) {
+    console.log(err)
     return errorResponse(res, err.message);
   }
 };
@@ -154,9 +155,32 @@ const addTaskChecklist = async (req, res) => {
   }
 }
 
+const removeAssignment = async (req, res) => {
+  try {
+    const { taskId, userId } = req.params
 
+    const result = await taskService.removeTaskAssignment({
+      task_id: Number(taskId),
+      user_id: Number(userId),
+      removed_by: req.user.user_id,
+      user_role: req.user.role, // 👈 role from JWT
+    })
+
+    res.json({
+      success: true,
+      message: 'Task assignment removed',
+      data: result,
+    })
+  } catch (error) {
+    res.status(403).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
 module.exports = {
   createTask,
+  removeAssignment,
   getTasks,
   getTaskById,
   updateTask,

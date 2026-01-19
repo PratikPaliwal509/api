@@ -41,21 +41,26 @@ router.post('/:id/members', authMiddleware, logActivity({
     getChanges: (req, res, body) => body.data
   }), projectController.addProjectMember);
 
-router.delete('/:id/members/:userId', authMiddleware,  logActivity({
-    action: 'REMOVE MEMBER',
-    entityType: 'Project',
-    getEntityId: (req) => Number(req.params.id),
-    getDescription: (req) =>
-      `Removed user ${req.params.userId} from project`,
-    getChanges: (req) => ({ removed_user_id: Number(req.params.userId) })
-  }), projectController.removeProjectMember);
+// router.delete('/:id/members/:userId', authMiddleware,  logActivity({
+//     action: 'REMOVE MEMBER',
+//     entityType: 'Project',
+//     getEntityId: (req) => Number(req.params.id),
+//     getDescription: (req) =>
+//       `Removed user ${req.params.userId} from project`,
+//     getChanges: (req) => ({ removed_user_id: Number(req.params.userId) })
+//   }), projectController.removeProjectMember);
 
   
 // PATCH /api/projects/:id/status
+
 router.patch('/:id/status', authMiddleware, projectController.updateProjectStatus)
 
 
-
+router.delete(
+  '/:projectId/members/:userId',
+  authMiddleware,
+  projectController.leaveProjectController
+)
 router.get(
   "/:project_id/users",
   authMiddleware,

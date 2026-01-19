@@ -1,3 +1,4 @@
+const { use } = require('react');
 const projectService = require('../services/project.service');
 const { successResponse } = require('../utils/response');
 
@@ -70,7 +71,7 @@ exports.addProjectMember = async (req, res, next) => {
       req.body.role_in_project,
       req.body.hourly_rate,
     );
-console.log("project"+JSON.stringify(project))
+    console.log("project" + JSON.stringify(project))
     return successResponse(res, 'PROJECT_MEMBER_ADDED', project);
   } catch (err) {
     next(err);
@@ -171,21 +172,21 @@ exports.getProjectNotes = async (req, res) => {
 }
 
 exports.addProjectNote = async (req, res) => {
-    try {
-        const { project_id, title, notes } = req.body
-        const userId = req.user.user_id
+  try {
+    const { project_id, title, notes } = req.body
+    const userId = req.user.user_id
 
-        if (!title || !notes) {
-            return res.status(400).json({ success: false, message: "Title and notes are required" })
-        }
-
-        const updatedProject = await projectService.addProjectNoteService({ project_id, title, notes, userId })
-
-        res.json({ success: true, data: updatedProject, message: "Note added to project successfully" })
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ success: false, message: err.message || "Something went wrong" })
+    if (!title || !notes) {
+      return res.status(400).json({ success: false, message: "Title and notes are required" })
     }
+
+    const updatedProject = await projectService.addProjectNoteService({ project_id, title, notes, userId })
+
+    res.json({ success: true, data: updatedProject, message: "Note added to project successfully" })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, message: err.message || "Something went wrong" })
+  }
 }
 
 exports.getProjectsWithoutNotes = async (req, res) => {
@@ -206,3 +207,31 @@ exports.getProjectsWithoutNotes = async (req, res) => {
     })
   }
 }
+
+exports.leaveProjectController = async (req, res) => {
+  try {
+    const { projectId, userId } = req.params;
+
+    // Optional: only allow self-leave
+    if (Number(userId) !== req.user.user_id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only leave the project yourself',
+      });
+    }
+
+    const result = await projectService.leaveProject(projectId, userId);
+
+    res.json({
+      success: true,
+      message: 'You have left the project successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

@@ -12,6 +12,20 @@ exports.createTeam = async (data) => {
     team_lead_id
   } = data;
 
+const lastTeam = await prisma.team.findFirst({
+  orderBy: { team_id: 'desc' },
+  select: { team_code: true },
+})
+
+let nextNumber = 1
+
+if (lastTeam?.team_code) {
+  const parts = lastTeam.team_code.split('-') // TEAM-0004
+  nextNumber = Number(parts[1]) + 1
+}
+
+const teamCode = `TEAM-${String(nextNumber).padStart(4, '0')}`
+
   if (!agency_id || !team_name) {
     throw new Error('TEAM_REQUIRED_FIELDS_MISSING');
   }
@@ -58,7 +72,7 @@ exports.createTeam = async (data) => {
         agency_id: Number(agency_id),
         department_id: department_id ? Number(department_id) : null,
         team_name,
-        team_code,
+        team_code:teamCode,
         description,
         team_lead_id: team_lead_id ? Number(team_lead_id) : null,
 

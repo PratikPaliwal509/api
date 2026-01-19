@@ -100,7 +100,8 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
             select: {
               user_id: true,
               full_name: true,
-              email: true
+              email: true,
+              
             }
           }
         }
@@ -408,6 +409,7 @@ exports.addProjectNoteService = async ({ project_id, title, notes, userId }) => 
         }
     })
 }
+
 exports.getProjectsWithoutNotesService = async (agency_id) => {
   return prisma.project.findMany({
     where: {
@@ -432,3 +434,34 @@ exports.getProjectsWithoutNotesService = async (agency_id) => {
     },
   })
 }
+
+exports.leaveProject = async (projectId, userId) => {
+  // Ensure member exists and is active
+  const member = await prisma.projectMember.findFirst({
+    where: {
+      project_id: Number(projectId),
+      user_id: Number(userId),
+      is_active: true,
+      left_at: null,
+    },
+  });
+
+  if (!member) {
+    throw new Error('Project member not found or already left');
+  }
+
+  // ✅ Use COMPOSITE UNIQUE KEY
+  return prisma.projectMember.update({
+    where: {
+      project_id_user_id_is_active: {
+        project_id: Number(projectId),
+        user_id: Number(userId),
+        is_active: true,
+      },
+    },
+    data: {
+      left_at: new Date(),
+      is_active: false, // 🔥 important
+    },
+  });
+};
