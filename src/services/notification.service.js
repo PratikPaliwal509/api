@@ -9,8 +9,7 @@ const createNotification = async (data) => {
   const userId = data.user_id
   const title = data.title
   const message = data.message
-  console.log(userId)
-   const notification = await prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       user_id: data.user_id,
       notification_type: data.notification_type,
@@ -23,13 +22,12 @@ const createNotification = async (data) => {
       sent_via_push: data.sent_via_push || false
     }
   })
-const sendEmailNotification = true
+  const sendEmailNotification = true
   if (sendEmailNotification) {
     const user = await prisma.user.findUnique({
-      where: { user_id:userId },
+      where: { user_id: userId },
       // select: { email: true, first_name: true },
     })
-console.log("user"+user)
     if (user?.email) {
       await sendEmail({
         to: user.email,
@@ -41,7 +39,7 @@ console.log("user"+user)
       })
     }
   }
- return notification
+  return notification
 }
 
 /**
@@ -107,7 +105,7 @@ const deleteNotification = async (notificationId, userId) => {
 }
 module.exports = {
   deleteNotification,
-  
+
   markAsRead,
   markAllAsRead,
   getUserNotifications,

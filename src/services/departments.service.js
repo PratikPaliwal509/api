@@ -26,7 +26,6 @@ exports.createDepartment = async (data) => {
   if (existingDepartment) {
     throw new Error('DEPARTMENT_ALREADY_EXISTS');
   }
-console.log("data"+data)
   return prisma.department.create({
     data
   });

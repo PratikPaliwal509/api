@@ -12,7 +12,6 @@ const isValidNumber = (v) => Number.isInteger(v) && v > 0;
 
 /* ---------------- CREATE PROJECT ---------------- */
 exports.createProject = async (data, userId, agencyId) => {
-    console.log('Creating project with data:', data, 'by user:', userId, 'in agency:', agencyId);
   const {
     agency_id,
     client_id,
@@ -59,7 +58,6 @@ exports.createProject = async (data, userId, agencyId) => {
   if (!manager) throwError('NOT_FOUND', 'Project manager not found', 'project_manager_id');
 
   // Agency match
-  console.log('agency_id:', agency_id, 'agencyId:', agencyId);
   if (agency_id !== agencyId) {
     throwError('FORBIDDEN', 'Cannot create project outside your agency');
   }
@@ -101,7 +99,7 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
               user_id: true,
               full_name: true,
               email: true,
-              
+
             }
           }
         }

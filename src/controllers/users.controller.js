@@ -45,32 +45,30 @@ exports.getAllUsers = async (req, res) => {
 }
 
 exports.getAgencyUsers = async (req, res) => {
-     try {
-        const { agency_id } = req.query
+  try {
+    const { agency_id } = req.query
 
-        console.log('Agency ID:', agency_id)
-
-        if (!agency_id) {
-            return res.status(400).json({
-                success: false,
-                message: 'agency_id is required'
-            })
-        }
-
-        const users = await usersService.getUsersByAgencyId(agency_id)
-
-        return res.status(200).json({
-            success: true,
-            data: users
-        })
-    } catch (error) {
-        console.error('❌ Get Users By Agency Error:', error)
-
-        return res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to fetch users'
-        })
+    if (!agency_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'agency_id is required'
+      })
     }
+
+    const users = await usersService.getUsersByAgencyId(agency_id)
+
+    return res.status(200).json({
+      success: true,
+      data: users
+    })
+  } catch (error) {
+    console.error('❌ Get Users By Agency Error:', error)
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch users'
+    })
+  }
 }
 
 exports.getManagersByAgency = async (req, res) => {
@@ -99,10 +97,8 @@ exports.getUsersBySameAgency = async (req, res, next) => {
   try {
     // 1️⃣ Get userId from token
     const userId = req.user.user_id
-console.log("userId"+userId)
-// 2️⃣ Fetch logged-in user to get agency_id
-const loggedInUser = await usersService.getUserById(userId)
-console.log("loggedInUser"+loggedInUser)
+    // 2️⃣ Fetch logged-in user to get agency_id
+    const loggedInUser = await usersService.getUserById(userId)
 
     if (!loggedInUser || !loggedInUser.agency_id) {
       return res.status(400).json({
@@ -128,8 +124,7 @@ console.log("loggedInUser"+loggedInUser)
 exports.getUsersWithoutTeam = async (req, res, next) => {
   try {
     const userId = req.user.user_id
-const loggedInUser = await usersService.getUserById(userId)
-console.log("loggedInUser"+loggedInUser)
+    const loggedInUser = await usersService.getUserById(userId)
 
     if (!loggedInUser || !loggedInUser.agency_id) {
       return res.status(400).json({

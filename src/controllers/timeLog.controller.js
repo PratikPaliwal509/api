@@ -23,7 +23,6 @@ const startTimer = async (req, res) => {
   try {
     const { taskId, project_id } = req.body
     const userId = req.user.user_id
-    console.log(project_id)
     if (!taskId || !project_id) {
       return res
         .status(400)
@@ -48,9 +47,7 @@ const stopTimer = async (req, res) => {
   try {
     const { logId } = req.body
     const userId = req.user.user_id
-    console.log("stop"+userId)
     if (!logId) {
-      console.log("logid not found")
       return res.status(400).json({ message: "logId is required" })
     }
 
@@ -58,15 +55,12 @@ const stopTimer = async (req, res) => {
       logId,
       userId
     })
-console.log(log)
     if (!log) {
-      console.log("active log not found")
       return res.status(404).json({ message: "Active log not found" })
     }
 
     res.status(200).json(log)
   } catch (error) {
-    console.log(error)
     res.status(500).json({ message: "Failed to stop timer" })
   }
 }
@@ -183,7 +177,7 @@ module.exports = {
   getActiveTimer,
   startTimer,
   stopTimer,
-createOrUpdateTimeLog,
+  createOrUpdateTimeLog,
   createTimeLog,
   getTaskTimeLogs,
   updateTimeLog,

@@ -9,7 +9,6 @@ const createTask = async (data, userId) => {
     orderBy: { task_id: 'desc' },
     select: { task_number: true },
   })
-console.log(lastTask)
 let nextNumber = 1
 
 if (lastTask?.task_number) {
@@ -17,8 +16,6 @@ if (lastTask?.task_number) {
   nextNumber = Number(parts[1]) + 1
 }
 
-console.log(lastTask?.task_number)
-console.log(nextNumber)
 const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
 
   return prisma.task.create({
@@ -56,7 +53,6 @@ const getTasks = async (filters) => {
       some: { user_id: Number(filters.assigned_to), is_active: true }
     };
   }
-console.log(JSON.stringify(filters))
   return prisma.task.findMany({
     where,
     include: {
