@@ -19,4 +19,6 @@ router.put('/:id', authMiddleware, departmentsController.updateDepartment);
 // Activate / Deactivate department
 router.patch('/:id/status', authMiddleware, departmentsController.updateDepartmentStatus);
 
+router.get('/:departmentId/sub-departments', authMiddleware, departmentsController.getSubDepartments)
+
 module.exports = router;

@@ -25,7 +25,6 @@ const getMyNotifications = async (req, res) => {
       userId,
       req.query
     )
-console.log("notifications"+ JSON.stringify(notifications))
     res.json({ success: true, data: notifications })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })

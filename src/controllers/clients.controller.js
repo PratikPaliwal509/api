@@ -111,7 +111,6 @@ exports.deleteClient = async (req, res, next) => {
 
 exports.getClientNotes = async (req, res) => {
   try {
-    console.log("users req"+JSON.stringify(req.user))
     const notes = await clientsService.fetchClientNotesService(req.user)
     res.status(200).json(notes)
   } catch (error) {

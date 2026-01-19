@@ -26,7 +26,7 @@ exports.createDepartment = async (data) => {
   if (existingDepartment) {
     throw new Error('DEPARTMENT_ALREADY_EXISTS');
   }
-
+console.log("data"+data)
   return prisma.department.create({
     data
   });
@@ -106,7 +106,10 @@ exports.updateDepartment = async (id, data) => {
 
   return prisma.department.update({
     where: { department_id: Number(id) },
-    data
+    data: {
+      ...data,
+      updated_at: new Date(), // ✅ correct
+    },
   });
 };
 
@@ -123,3 +126,15 @@ exports.updateDepartmentStatus = async (id, is_active) => {
     data: { is_active }
   });
 };
+
+exports.getSubDepartmentsByDepartmentId = async (departmentId) => {
+  return await prisma.department.findMany({
+    where: {
+      parent_department_id: departmentId,
+      is_active: true, // optional (remove if not needed)
+    },
+    orderBy: {
+      department_name: 'asc',
+    },
+  })
+}

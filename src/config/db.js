@@ -13,7 +13,6 @@ const prisma = new PrismaClient({ adapter });
 // Optional: log queries in development
 if (process.env.NODE_ENV === 'development') {
   prisma.$use(async (params, next) => {
-    console.log('Prisma Query:', params);
     return next(params);
   });
 }
