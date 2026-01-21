@@ -38,12 +38,11 @@ exports.getDepartmentsByAgency = async (req, res, next) => {
   }
 };
 
+// controllers/departments.controller.js
+
 exports.getAllDepartments = async (req, res) => {
   try {
-    const userId = req.user.user_id;
-    console.log("req.user.user_id" + req.user.user_id)
-    // console.log(JSON.stringify(req))
-    const departments = await departmentsService.getAllDepartments(userId)
+    const departments = await departmentsService.getAllDepartments(req.user)
 
     return res.status(200).json({
       success: true,
@@ -59,6 +58,7 @@ exports.getAllDepartments = async (req, res) => {
     })
   }
 }
+
 // GET DEPARTMENT BY ID
 exports.getDepartmentById = async (req, res, next) => {
   try {

@@ -1,5 +1,4 @@
 const prisma = require('../config/db');
-
 // CREATE TEAM
 
 exports.createTeam = async (data) => {
@@ -12,19 +11,19 @@ exports.createTeam = async (data) => {
     team_lead_id
   } = data;
 
-const lastTeam = await prisma.team.findFirst({
-  orderBy: { team_id: 'desc' },
-  select: { team_code: true },
-})
+  const lastTeam = await prisma.team.findFirst({
+    orderBy: { team_id: 'desc' },
+    select: { team_code: true },
+  })
 
-let nextNumber = 1
+  let nextNumber = 1
 
-if (lastTeam?.team_code) {
-  const parts = lastTeam.team_code.split('-') // TEAM-0004
-  nextNumber = Number(parts[1]) + 1
-}
+  if (lastTeam?.team_code) {
+    const parts = lastTeam.team_code.split('-') // TEAM-0004
+    nextNumber = Number(parts[1]) + 1
+  }
 
-const teamCode = `TEAM-${String(nextNumber).padStart(4, '0')}`
+  const teamCode = `TEAM-${String(nextNumber).padStart(4, '0')}`
 
   if (!agency_id || !team_name) {
     throw new Error('TEAM_REQUIRED_FIELDS_MISSING');
@@ -72,15 +71,15 @@ const teamCode = `TEAM-${String(nextNumber).padStart(4, '0')}`
         agency_id: Number(agency_id),
         department_id: department_id ? Number(department_id) : null,
         team_name,
-        team_code:teamCode,
+        team_code: teamCode,
         description,
         team_lead_id: team_lead_id ? Number(team_lead_id) : null,
 
         // Connect to UserTeams
         users: team_lead_id
           ? {
-              connect: { user_id: Number(team_lead_id) }
-            }
+            connect: { user_id: Number(team_lead_id) }
+          }
           : undefined
       }
     });
@@ -101,13 +100,68 @@ const teamCode = `TEAM-${String(nextNumber).padStart(4, '0')}`
   return team;
 };
 
-// LIST TEAMS (FILTERABLE)
-exports.getTeams = async (filters) => {
-  const { agency_id, department_id } = filters
+// services/teams.service.js
+// services/teams.service.js
 
+exports.getTeams = async (user) => {
+  const { team_visibility } = user // all | agency | department | own | team | assigned | none
   const where = {}
-  if (agency_id) where.agency_id = Number(agency_id)
-  if (department_id) where.department_id = Number(department_id)
+  console.log(user)
+  // console.log(filters)
+  // optional filters
+  // if (filters.agency_id) where.agency_id = Number(filters.agency_id)
+  // if (filters.department_id) where.department_id = Number(filters.department_id)
+
+  const scope = user?.role?.permissions?.teams?.view;
+
+  if (!scope) {
+    return [];
+  }
+
+  // visibility cases (NO ROLE CHECK)
+  switch (scope) {
+    case 'all':
+      break
+
+    case 'agency':
+      where.agency_id = user.agency.agency_id
+      break
+
+    case 'department':
+      console.log("deeeeeeeeeeeepartment")
+      where.department_id = user.department.department_id
+      break
+
+    case 'own':
+      where.team_lead_id = user.user_id
+      break
+
+    case 'team':
+      console.log("teams" + user.user_id)
+      // where.users = {
+      //   // some: { user_id: user.user_id },
+      // }
+      where.team_id = user.team.team_id
+      break
+
+
+    case 'assigned':
+        console.log("assign")
+      where.users = {
+        some: {
+          project_members: {
+            some: {
+              user_id: user.user_id,
+            },
+          },
+        },
+      }
+      break
+
+
+    default:
+      where.team_id = -1
+  }
 
   const teams = await prisma.team.findMany({
     where,
@@ -125,12 +179,11 @@ exports.getTeams = async (filters) => {
     },
   })
 
-  // ✅ Attach members per team
-  const teamIds = teams.map(t => t.team_id)
+  if (!teams.length) return []
 
   const users = await prisma.user.findMany({
     where: {
-      team_id: { in: teamIds },
+      team_id: { in: teams.map(t => t.team_id) },
       is_active: true,
     },
     select: {
@@ -147,6 +200,9 @@ exports.getTeams = async (filters) => {
     members: users.filter(u => u.team_id === team.team_id),
   }))
 }
+
+
+
 
 
 // TEAM DETAILS

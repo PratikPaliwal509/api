@@ -27,14 +27,19 @@ exports.createTeam = async (req, res, next) => {
 };
 
 // LIST TEAMS
+// controllers/teams.controller.js
+
+// controllers/teams.controller.js
+
 exports.getTeams = async (req, res, next) => {
   try {
-    const teams = await teamsService.getTeams(req.query);
-    return successResponse(res, 'Teams fetched successfully', teams);
+    const teams = await teamsService.getTeams(req.user)
+    return successResponse(res, 'Teams fetched successfully', teams)
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
+
 
 // TEAM DETAILS
 exports.getTeamById = async (req, res, next) => {

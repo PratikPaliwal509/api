@@ -31,27 +31,70 @@ exports.createDepartment = async (data) => {
   });
 };
 
-exports.getAllDepartments = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { user_id: userId },
-    select: { agency_id: true },
-  });
+// services/departments.service.js
 
-  if (!user) {
-    throw new Error('User not found');
+exports.getAllDepartments = async (user) => {
+  const where = {}
+  console.log(user)
+  console.log(user?.role?.permissions?.departments?.view)
+  console.log(user?.agency?.agency_id)
+const scope = user?.role?.permissions?.departments?.view;
+
+  if (!scope) {
+    return [];
   }
-  return await prisma.department.findMany({
-    where: {
-      agency_id: user.agency_id,
-    },
-    orderBy: {
-      created_at: 'desc',
-    },
+
+  switch (scope) {
+    case 'all':
+      // no restriction
+      break
+
+    case 'agency':
+      where.agency_id = user.agency.agency_id
+      break
+
+    case 'department':
+      console.log("department", user.department.department_id)
+      where.department_id = user.department.department_id
+      break
+
+    case 'own':
+      where.manager_id = user.user_id
+      break
+
+    case 'team':
+      where.teams = {
+        some: {
+          users: {
+            some: { user_id: user.user_id },
+          },
+        },
+      }
+      break
+
+    case 'assigned':
+      where.teams = {
+        some: {
+          users: {
+            some: {
+              project_members: {
+                some: { user_id: user.user_id },
+              },
+            },
+          },
+        },
+      }
+      break
+
+    default:
+      where.department_id = -1
+  }
+
+  return prisma.department.findMany({
+    where,
+    orderBy: { created_at: 'desc' },
     include: {
       teams: {
-        where: {
-          agency_id: user.agency_id, // filter teams by same agency
-        },
         select: {
           team_id: true,
           team_name: true,
@@ -60,6 +103,7 @@ exports.getAllDepartments = async (userId) => {
     },
   })
 }
+
 // GET DEPARTMENTS BY AGENCY
 exports.getDepartmentsByAgency = async (agencyId) => {
   return prisma.department.findMany({
