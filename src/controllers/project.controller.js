@@ -19,9 +19,10 @@ exports.createProject = async (req, res, next) => {
 // ---------------- LIST PROJECTS ----------------
 exports.getProjects = async (req, res, next) => {
   try {
-    const projects = await projectService.getProjects(
-      req.user.user_id,
-      req.user.agency_id
+    const projects = await projectService.getProjectsByScope(
+      req.user
+      // req.user.user_id,
+      // req.user.agency_id
     );
     return successResponse(res, 'PROJECTS_FETCHED', projects);
   } catch (err) {

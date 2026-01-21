@@ -17,14 +17,19 @@ exports.createClient = async (req, res, next) => {
 };
 
 // LIST CLIENTS
+// controllers/clients.controller.js
 exports.getClients = async (req, res, next) => {
   try {
-    const clients = await clientsService.getClients();
+    const user = req.user;
+
+    const clients = await clientsService.getClientsByScope(user);
+
     return successResponse(res, 'Clients fetched successfully', clients);
   } catch (error) {
     next(error);
   }
 };
+
 
 // CLIENT DETAILS
 exports.getClientById = async (req, res, next) => {

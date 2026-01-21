@@ -47,7 +47,20 @@ module.exports = async (req, res, next) => {
         role: {            // ✅ JOIN
           select: {
             role_id: true,
-            role_name: true
+            role_name: true,
+            permissions:true
+          }
+        },
+        department: {            // ✅ JOIN
+          select: {
+            department_id: true,
+            department_name: true,
+          }
+        },
+        team: {            // ✅ JOIN
+          select: {
+            team_id: true,
+            team_name: true,
           }
         },
         agency: {            // ✅ JOIN

@@ -73,15 +73,88 @@ exports.createProject = async (data, userId, agencyId) => {
 };
 
 /* ---------------- GET PROJECTS ---------------- */
-exports.getProjects = async (userId, agencyId) => {
+exports.getProjectsByScope = async (user) => {
+  console.log(user)
+  console.log(user?.role?.permissions?.clients?.view)
+  console.log(user?.agency?.agency_id)
+  const scope = user?.role?.permissions?.projects?.view;
+  if (!scope) return [];
+
+  const where = {
+    // agency_id: user.agency_id,
+    // is_active: true
+  };
+
+  switch (scope) {
+    case 'all': break;
+
+    case 'agency':
+      console.log("agencycase")
+      where.agency_id = user.agency.agency_id;
+    where.is_active = true;
+      // agency filter already applied
+      break;
+
+    case 'assigned':
+      where.OR = [
+        { project_manager_id: user.user_id },
+        {
+          projectMembers: {
+            some: {
+              user_id: user.user_id,
+              is_active: true
+            }
+          }
+        }
+      ];
+      break;
+
+    case 'own':
+      where.created_by = user.user_id;
+      break;
+
+    case 'team':
+      where.projectMembers = {
+        some: {
+          user: {
+            teams: {
+              some: {
+                team_id: user.team.team_id
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    case 'department':
+      where.projectMembers = {
+        some: {
+          user: {
+            teams: {
+              some: {
+                department_id: user.department.department_id
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    default:
+      return [];
+  }
+
   return prisma.project.findMany({
-    where: {
-      agency_id: agencyId,
-      is_active: true
-    },
-    orderBy: { created_at: 'desc' }
+    where,
+    orderBy: { created_at: 'desc' },
+    include: {
+      client: true,
+      manager: true
+    }
   });
 };
+
 
 /* ---------------- GET PROJECT BY ID ---------------- */
 exports.getProjectById = async (projectId, userId, agencyId) => {

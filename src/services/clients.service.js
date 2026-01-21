@@ -32,14 +32,87 @@ exports.createClient = async (data) => {
   });
 };
 
-// LIST CLIENTS (agency scoped)
-exports.getClients = async () => {
+// services/clients.service.js
+exports.getClientsByScope = async (user) => {
+  console.log(user)
+  console.log(user?.role?.permissions?.clients?.view)
+  console.log(user?.agency?.agency_id)
+  const scope = user?.role?.permissions?.clients?.view;
+
+  if (!scope) {
+    return [];
+  }
+
+  const where = {};
+
+  switch (scope) {
+    case 'all':
+      // no filter
+      break;
+
+    case 'agency':
+      where.agency_id = user.agency.agency_id;
+      break;
+
+    case 'department':
+      where.agency_id = user.agency.agency_id;
+      where.projects = {
+        some: {
+          projectMembers: {
+            some: {
+              user: {
+                teams: {
+                  some: {
+                    department_id: user.department.department_id
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      break;
+
+
+    case 'team':
+      where.projects = {
+        some: {
+          projectMembers: {
+            some: {
+              user: {
+                teams: {
+                  some: {
+                    team_id: user.team.team_id
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    case 'assigned':
+      where.agency_id = user.agency.agency_id;
+      where.account_manager_id = user.user_id;
+      break;
+
+    case 'own':
+      where.created_by = user.user_id;
+      break;
+
+    default:
+      return [];
+  }
+
   return prisma.client.findMany({
+    where,
     orderBy: {
       created_at: 'desc'
     }
   });
 };
+
 
 // CLIENT DETAILS
 exports.getClientById = async (id) => {
