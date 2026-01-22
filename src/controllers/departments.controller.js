@@ -65,6 +65,7 @@ exports.getDepartmentById = async (req, res, next) => {
     const department = await departmentsService.getDepartmentById(req.params.id);
     return successResponse(res, 'Department fetched successfully', department);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };

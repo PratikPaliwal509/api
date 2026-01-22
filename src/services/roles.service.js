@@ -53,7 +53,10 @@ exports.updateRole = async (id, data) => {
 
   return prisma.role.update({
     where: { role_id: Number(id) },
-    data
+    data: {
+        ...data,
+        updated_at: new Date(), // ✅ ensure timestamp update
+      },
   });
 };
 

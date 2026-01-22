@@ -9,7 +9,7 @@ router.get("/notes", authMiddleware, projectController.getProjectNotes)
 // Project CRUD
 router.post('/notes', authMiddleware, projectController.addProjectNote)
 
-router.get("/managed", authMiddleware, projectController.getManagedProjects);
+// router.get("/managed", authMiddleware, projectController.getManagedProjects);
 router.get("/without-notes", authMiddleware, projectController.getProjectsWithoutNotes)
 
 router.post('/', authMiddleware, logActivity({

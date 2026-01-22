@@ -181,7 +181,7 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   });
 
   if (!project) throwError('NOT_FOUND', 'Project not found');
-
+console.log({ project, agencyId, userId })
   // Access rules: allow if same agency, or the requesting user is project manager,
   // the creator, or is a project member.
   const isSameAgency = project.agency_id === agencyId;
@@ -189,7 +189,7 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   const isCreator = project.created_by === userId;
   const memberIds = (project.projectMembers || []).map((m) => m.user_id);
   const isMember = memberIds.includes(userId);
-
+console.log({ isSameAgency, isManager, isCreator, isMember })
   if (!isSameAgency && !isManager && !isCreator && !isMember) {
     throwError('FORBIDDEN', 'You do not have access to this project');
   }

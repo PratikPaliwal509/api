@@ -126,7 +126,21 @@ exports.getDepartmentById = async (id) => {
           team_id: true,
           team_name: true,
         },
+        
       },
+      sub_departments: {
+      select: {
+        department_id: true,
+        department_name: true,
+        teams: {
+          select: {
+            team_id: true,
+            team_name: true,
+          },
+        },
+      },
+
+    },
       // agency: {
       //   select: {
       //             agency_id: true,
@@ -139,7 +153,7 @@ exports.getDepartmentById = async (id) => {
   if (!department) {
     throw new Error('DEPARTMENT_NOT_FOUND');
   }
-
+console.log(JSON.stringify(department))
   return department;
 };
 

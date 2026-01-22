@@ -268,7 +268,10 @@ exports.updateTeam = async (id, data) => {
     // 2️⃣ Update team
     const updatedTeam = await tx.team.update({
       where: { team_id: teamId },
-      data,
+     data: {
+    ...data,
+    updated_at: new Date(), // 🔥 force update
+  },
     })
 
     // 3️⃣ If team lead changed

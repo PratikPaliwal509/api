@@ -28,7 +28,10 @@ exports.createClient = async (data) => {
   }
 
   return prisma.client.create({
-    data
+    data: {
+      ...data,
+      client_since: new Date(), 
+    },
   });
 };
 
