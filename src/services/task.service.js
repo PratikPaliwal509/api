@@ -4,19 +4,19 @@ const prisma = require('../config/db');
  * Create Task / Subtask
  */
 const createTask = async (data, userId) => {
-   const lastTask = await prisma.task.findFirst({
+  const lastTask = await prisma.task.findFirst({
     where: { project_id: data.project_id },
     orderBy: { task_id: 'desc' },
     select: { task_number: true },
   })
-let nextNumber = 1
+  let nextNumber = 1
 
-if (lastTask?.task_number) {
-  const parts = lastTask.task_number.split('-')
-  nextNumber = Number(parts[1]) + 1
-}
+  if (lastTask?.task_number) {
+    const parts = lastTask.task_number.split('-')
+    nextNumber = Number(parts[1]) + 1
+  }
 
-const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
+  const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
 
   return prisma.task.create({
     data: {
@@ -42,38 +42,100 @@ const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
 /**
  * List Tasks (filters)
  */
-const getTasks = async (filters) => {
+const getTasks = async (user) => {
   const where = {};
+  console.log(user)
+  const scope = user?.role?.permissions?.tasks?.view;
+  if (!scope) return [];
 
-  if (filters.project_id) where.project_id = Number(filters.project_id);
-  if (filters.status) where.status = filters.status;
-  if (filters.priority) where.priority = filters.priority;
-  if (filters.assigned_to) {
-    where.assignments = {
-      some: { user_id: Number(filters.assigned_to), is_active: true }
-    };
+  switch (scope) {
+    case 'all':
+      // No restriction
+      break;
+
+    case 'team':
+      where.assignments = {
+        some: {
+          user: { team_id: user.team.team_id },
+          is_active: true,
+        },
+      };
+      break;
+
+
+      //Selection method of department
+//       Task.task_id = 9001
+// └── Task.project_id = 100
+//     └── Project.project_id = 100
+//         └── ProjectMember.project_id = 100
+//             └── ProjectMember.user_id = 22
+//                 └── User.department_id = 3
+//                     └── Logged-in User.department_id = 3
+
+    case 'department':
+      where.project = {
+        projectMembers: {
+          some: {
+            user: {
+              department_id: user.department.department_id,
+            },
+          },
+        },
+      };
+      break;
+
+
+    case 'assigned':
+      console.log("assigned")
+      where.assignments = {
+        some: {
+          user_id: user.user_id,
+          is_active: true,
+        },
+      };
+      break;
+
+    case 'own':
+      where.created_by = user.user_id;
+      break;
+
+    default:
+      where.OR = [
+        { created_by: user.user_id },
+        {
+          assignments: {
+            some: {
+              user_id: user.user_id,
+              is_active: true,
+            },
+          },
+        },
+      ];
+      break;
   }
+
   return prisma.task.findMany({
     where,
     include: {
       subtasks: true,
-      assignments: { where: { is_active: true },
+      assignments: {
+        where: { is_active: true },
         include: {
           user: {
             select: {
               user_id: true,
               first_name: true,
               last_name: true,
-              full_name:true,
+              full_name: true,
             },
           },
-     }
-     },
-       
+        },
+      },
     },
-    orderBy: { created_at: 'desc' }
+    orderBy: { created_at: 'desc' },
   });
 };
+
 
 /**
  * Task Details

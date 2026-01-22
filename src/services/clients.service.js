@@ -201,7 +201,7 @@ exports.deleteClient = async (clientId, userId) => {
 }
 
 exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
-
+console.log('Fetching client notes for user:', user_id, 'with role:', role.role_name, 'in agency:', agency.agency_id)
   const where = {
     notes: { not: null }
   }
@@ -218,6 +218,7 @@ exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
 
   // 🔥 USER / QA / DEVELOPER → OWN NOTES
   else {
+    console.log('Applying filter for own notes only')
     where.agency_id = agency.agency_id
     where.created_by = user_id
   }

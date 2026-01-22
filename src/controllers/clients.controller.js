@@ -55,6 +55,7 @@ exports.getAllClients = async (req, res) => {
     res.status(500).json({ message: error.message })
   }
 }
+
 exports.getAllClients = async (req, res) => {
   try {
     const { agency_id } = req.query
@@ -69,7 +70,6 @@ exports.getAllClients = async (req, res) => {
     res.status(500).json({ message: error.message })
   }
 }
-
 
 // UPDATE CLIENT
 exports.updateClient = async (req, res, next) => {

@@ -19,12 +19,13 @@ const createTask = async (req, res) => {
  */
 const getTasks = async (req, res) => {
   try {
-    const tasks = await taskService.getTasks(req.query);
+    const tasks = await taskService.getTasks(req.user);
     return successResponse(res, 'Task list fetched', tasks);
   } catch (err) {
     return errorResponse(res, err.message);
   }
 };
+
 
 /**
  * GET /tasks/:id

@@ -15,15 +15,14 @@ router.post('/', authMiddleware,  logActivity({
   }), clientsController.createClient);
 
   
-  router.get("/notes", authMiddleware, clientsController.getClientNotes)
+router.get("/notes", authMiddleware, clientsController.getClientNotes)
 
-  router.get("/without-notes", authMiddleware, clientsController.getClientsWithoutNotes)
+router.get("/without-notes", authMiddleware, clientsController.getClientsWithoutNotes)
 // List clients
 router.get('/', authMiddleware, clientsController.getClients);
 
 // Client details
 router.get('/client/:id', authMiddleware, clientsController.getClientById);
-
 
 router.get('/clientsAll', authMiddleware, clientsController.getAllClients)
 // Update client
