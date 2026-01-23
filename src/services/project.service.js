@@ -10,67 +10,129 @@ const throwError = (code, message, field = null) => {
 
 const isValidNumber = (v) => Number.isInteger(v) && v > 0;
 
+const PROJECT_TYPES = Object.freeze({
+  SOFTWARE: 'SOFTWARE',
+  CONSULTANCY: 'CONSULTING',
+  HARDWARE: 'HARDWARE',
+})
+
+const PROJECT_TYPE_PREFIX_MAP = Object.freeze({
+  [PROJECT_TYPES.SOFTWARE]: 'SD',
+  [PROJECT_TYPES.CONSULTANCY]: 'CONS',
+  [PROJECT_TYPES.HARDWARE]: 'HW',
+})
+
+const getPrefixFromProjectType = (project_type) => {
+  const prefix = PROJECT_TYPE_PREFIX_MAP[project_type]
+  if (!prefix) {
+    throwError(
+      'VALIDATION_ERROR',
+      'Invalid project_type. Allowed: Software Development, Consultancy',
+      'project_type'
+    )
+  }
+  return prefix
+}
+
+const generateProjectCode = async ({ agency_id, prefix }) => {
+  const lastProject = await prisma.project.findFirst({
+    where: {
+      agency_id,
+      project_code: {
+        startsWith: prefix + '-',
+      },
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+    select: {
+      project_code: true,
+    },
+  })
+
+  let nextNumber = 1
+
+  if (lastProject?.project_code) {
+    const lastNumber = parseInt(lastProject.project_code.split('-')[1], 10)
+    if (!isNaN(lastNumber)) {
+      nextNumber = lastNumber + 1
+    }
+  }
+
+  return `${prefix}-${String(nextNumber).padStart(4, '0')}`
+}
+
+
 /* ---------------- CREATE PROJECT ---------------- */
 exports.createProject = async (data, userId, agencyId) => {
   const {
     agency_id,
     client_id,
     project_name,
-    project_code,
     project_manager_id,
+    project_type,
     start_date,
-    end_date
-  } = data;
-  
-  agencyId = agency_id; // Temporary assignment for testing purposes
+    end_date,
+  } = data
+
+  agencyId = agency_id
+
   // Required fields
-  if (!agency_id) throwError('VALIDATION_ERROR', 'agency_id is required', 'agency_id');
-  if (!client_id) throwError('VALIDATION_ERROR', 'client_id is required', 'client_id');
-  if (!project_name) throwError('VALIDATION_ERROR', 'project_name is required', 'project_name');
-  if (!project_code) throwError('VALIDATION_ERROR', 'project_code is required', 'project_code');
-  if (!project_manager_id) throwError('VALIDATION_ERROR', 'project_manager_id is required', 'project_manager_id');
+  if (!agency_id) throwError('VALIDATION_ERROR', 'agency_id is required', 'agency_id')
+  if (!client_id) throwError('VALIDATION_ERROR', 'client_id is required', 'client_id')
+  if (!project_name) throwError('VALIDATION_ERROR', 'project_name is required', 'project_name')
+  if (!project_manager_id) throwError('VALIDATION_ERROR', 'project_manager_id is required', 'project_manager_id')
+  if (!project_type) throwError('VALIDATION_ERROR', 'project_type is required', 'project_type')
 
   // ID validation
   if (![agency_id, client_id, project_manager_id].every(isValidNumber)) {
-    throwError('VALIDATION_ERROR', 'Invalid numeric ID');
+    throwError('VALIDATION_ERROR', 'Invalid numeric ID')
   }
 
   // Date validation
   if (start_date && isNaN(Date.parse(start_date))) {
-    throwError('VALIDATION_ERROR', 'Invalid start_date', 'start_date');
+    throwError('VALIDATION_ERROR', 'Invalid start_date', 'start_date')
   }
   if (end_date && isNaN(Date.parse(end_date))) {
-    throwError('VALIDATION_ERROR', 'Invalid end_date', 'end_date');
+    throwError('VALIDATION_ERROR', 'Invalid end_date', 'end_date')
   }
   if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
-    throwError('VALIDATION_ERROR', 'end_date cannot be before start_date', 'end_date');
+    throwError('VALIDATION_ERROR', 'end_date cannot be before start_date', 'end_date')
   }
 
-  // Foreign key existence
+  // Prefix + project code
+  const task_prefix = getPrefixFromProjectType(project_type)
+  const project_code = await generateProjectCode({
+    agency_id,
+    prefix: task_prefix,
+  })
+
+  // FK checks
   const [agency, client, manager] = await Promise.all([
     prisma.agency.findUnique({ where: { agency_id } }),
     prisma.client.findUnique({ where: { client_id } }),
-    prisma.user.findUnique({ where: { user_id: project_manager_id } })
-  ]);
+    prisma.user.findUnique({ where: { user_id: project_manager_id } }),
+  ])
 
-  if (!agency) throwError('NOT_FOUND', 'Agency not found', 'agency_id');
-  if (!client) throwError('NOT_FOUND', 'Client not found', 'client_id');
-  if (!manager) throwError('NOT_FOUND', 'Project manager not found', 'project_manager_id');
+  if (!agency) throwError('NOTUN_FOD', 'Agency not found', 'agency_id')
+  if (!client) throwError('NOT_FOUND', 'Client not found', 'client_id')
+  if (!manager) throwError('NOT_FOUND', 'Project manager not found', 'project_manager_id')
 
-  // Agency match
   if (agency_id !== agencyId) {
-    throwError('FORBIDDEN', 'Cannot create project outside your agency');
+    throwError('FORBIDDEN', 'Cannot create project outside your agency')
   }
 
   return prisma.project.create({
     data: {
       ...data,
+      project_code,   // ✅ auto
+      task_prefix,    // ✅ auto
       start_date: start_date ? new Date(start_date) : null,
       end_date: end_date ? new Date(end_date) : null,
-      created_by: userId
-    }
-  });
-};
+      created_by: userId,
+    },
+  })
+}
 
 /* ---------------- GET PROJECTS ---------------- */
 exports.getProjectsByScope = async (user) => {
