@@ -14,5 +14,8 @@ router.delete('/comments/:id', commentController.deleteComment);
 router.post('/:id/comments/:commentId/replies', commentController.createReply);
 router.get('/:id/comments/:commentId/replies', commentController.getCommentReplies);
 router.delete('/comments/:commentId/replies/:replyId', commentController.deleteReply);
-
+router.put(
+    '/comments/:comment_id',
+    commentController.updateComment
+)
 module.exports = router;

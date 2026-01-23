@@ -158,6 +158,8 @@ const addTaskChecklist = async (req, res) => {
 
 const removeAssignment = async (req, res) => {
   try {
+    // console.log('Removing assignment', JSON.stringify(req.params), 'by user', req.user)
+    // console.log('Removing assignment', JSON.stringify(req.params), 'by user', req.user.role)
     const { taskId, userId } = req.params
 
     const result = await taskService.removeTaskAssignment({
@@ -173,6 +175,7 @@ const removeAssignment = async (req, res) => {
       data: result,
     })
   } catch (error) {
+    console.log(error)
     res.status(403).json({
       success: false,
       message: error.message,

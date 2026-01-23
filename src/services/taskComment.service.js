@@ -49,7 +49,6 @@ const getCommentsByTask = async (taskId) => {
   return topLevelComments;
 };
 
-
 const deleteComment = async (commentId, userId) => {
   return prisma.taskComment.update({
     where: { comment_id: commentId },
@@ -102,11 +101,42 @@ const deleteReply = async (replyId, userId) => {
   });
 };
 
+const updateComment = async (comment_id, user_id, comment_text) => {
+    const comment = await prisma.taskComment.findUnique({
+        where: { comment_id: Number(comment_id) },
+    })
+
+    if (!comment) {
+        const error = new Error('Comment not found')
+        error.status = 404
+        throw error
+    }
+
+    // permission check
+    if (comment.user_id !== user_id) {
+        const error = new Error('You are not allowed to edit this comment')
+        error.status = 403
+        throw error
+    }
+
+    const updatedComment = await prisma.taskComment.update({
+        where: { comment_id: Number(comment_id) },
+        data: {
+            comment_text,
+            edited_at: new Date(),
+            is_edited: true
+        },
+    })
+console.log('Updated Comment:', updatedComment)
+    return updatedComment
+}
+
 module.exports = {
   createComment,
   getCommentsByTask,
   deleteComment,
   createReply,
   getCommentReplies,
-  deleteReply
+  deleteReply,
+  updateComment
 };

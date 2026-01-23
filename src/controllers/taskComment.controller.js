@@ -76,6 +76,40 @@ const deleteReply = async (req, res) => {
     return errorResponse(res, err.message);
   }
 };
+const updateComment = async (req, res) => {
+    try {
+        const { comment_id } = req.params
+        const { comment_text } = req.body
+        const user_id = req.user.user_id   // from JWT middleware
+
+        if (!comment_text || !comment_text.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Comment text is required',
+            })
+        }
+
+        const updatedComment =
+            await commentService.updateComment(
+                comment_id,
+                user_id,
+                comment_text
+            )
+
+        return res.status(200).json({
+            success: true,
+            message: 'Comment updated successfully',
+            data: updatedComment,
+        })
+    } catch (error) {
+        console.error('Update Comment Error:', error)
+
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || 'Something went wrong',
+        })
+    }
+}
 
 module.exports = {
   createComment,
@@ -83,5 +117,6 @@ module.exports = {
   deleteComment,
   createReply,
   getCommentReplies,
-  deleteReply
+  deleteReply,
+  updateComment
 };

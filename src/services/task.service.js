@@ -63,14 +63,14 @@ const getTasks = async (user) => {
       break;
 
 
-      //Selection method of department
-//       Task.task_id = 9001
-// └── Task.project_id = 100
-//     └── Project.project_id = 100
-//         └── ProjectMember.project_id = 100
-//             └── ProjectMember.user_id = 22
-//                 └── User.department_id = 3
-//                     └── Logged-in User.department_id = 3
+    //Selection method of department
+    //       Task.task_id = 9001
+    // └── Task.project_id = 100
+    //     └── Project.project_id = 100
+    //         └── ProjectMember.project_id = 100
+    //             └── ProjectMember.user_id = 22
+    //                 └── User.department_id = 3
+    //                     └── Logged-in User.department_id = 3
 
     case 'department':
       where.project = {
@@ -204,12 +204,23 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
     data: assignments,
     skipDuplicates: true,
   });
+  console.log('Assignments created', foundIds);
+
+  const currentAssigned = task.assigned_to || []
+
+  const updatedAssigned = [
+    ...new Set([...currentAssigned, ...foundIds]),
+  ]
 
   // update task.assigned_to as JSON array of all assigned users
   await prisma.task.update({
     where: { task_id: taskId },
-    data: { assigned_to: foundIds, assigned_date: new Date(), },
-  });
+    data: {
+      assigned_to: updatedAssigned,
+      assigned_date: new Date(),
+    },
+  })
+
 
   return { success: true, assigned_user_ids: foundIds };
 };
@@ -271,8 +282,13 @@ const removeTaskAssignment = async ({
   removed_by,
   user_role,
 }) => {
+  console.log(
+    'task_id:', task_id,
+    'user_id:', user_id,
+    'removed_by:', removed_by,
+    'user_role:', user_role
+  )
 
-  // 1️⃣ Fetch assignment with relations
   const assignment = await prisma.taskAssignment.findFirst({
     where: {
       task_id,
@@ -283,6 +299,7 @@ const removeTaskAssignment = async ({
       task: {
         select: {
           created_by: true,
+          assigned_to: true, // ✅ FIX
         },
       },
     },
@@ -292,32 +309,50 @@ const removeTaskAssignment = async ({
     throw new Error('Active assignment not found')
   }
 
-  // 2️⃣ Role / Permission check
-  const isAdmin = user_role === 'admin'
-  const isProjectManager = user_role === 'project_manager'
+  const isSuperAdmin = user_role.role_name === 'Super Admin'
+  const isAdmin = user_role.role_name === 'Admin'
+  const isProjectManager = user_role.role_name === 'Project Manager'
   const isTaskOwner = assignment.task.created_by === removed_by
   const isAssignedBy = assignment.assigned_by === removed_by
 
-  if (!isAdmin && !isProjectManager && !isTaskOwner && !isAssignedBy) {
+  if (!isSuperAdmin && !isAdmin && !isProjectManager && !isTaskOwner && !isAssignedBy) {
     throw new Error('You are not allowed to remove this assignment')
   }
 
-  // 3️⃣ Soft delete assignment
-  return prisma.taskAssignment.update({
-    where: {
-      task_id_user_id_is_active: {
-        task_id,
-        user_id,
-        is_active: true,
+  const updatedAssignedTo = (assignment.task.assigned_to || [])
+    .filter(id => Number(id) !== Number(user_id))
+
+  const [updatedAssignment, updatedTask] = await prisma.$transaction([
+    prisma.taskAssignment.update({
+      where: {
+        task_id_user_id_is_active: {
+          task_id,
+          user_id,
+          is_active: true,
+        },
       },
-    },
-    data: {
-      is_active: false,
-      removed_at: new Date(),
-      removed_by,
-    },
-  })
+      data: {
+        is_active: false,
+        removed_at: new Date(),
+        removed_by,
+      },
+    }),
+
+    prisma.task.update({
+      where: { task_id },
+      data: {
+        assigned_to: updatedAssignedTo,
+        updated_at: new Date(),
+      },
+    }),
+  ])
+
+  return {
+    assignment: updatedAssignment,
+    task: updatedTask,
+  }
 }
+
 module.exports = {
   createTask,
   removeTaskAssignment,
