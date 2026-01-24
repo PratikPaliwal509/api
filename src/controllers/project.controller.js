@@ -62,19 +62,35 @@ exports.updateProject = async (req, res, next) => {
 // ---------------- ADD MEMBER ----------------
 exports.addProjectMember = async (req, res, next) => {
   try {
-    console.log(req.body.hourly_rate)
-    console.log(req.body.role_in_project)
-    console.log(req.body.role)
-    const project = await projectService.addProjectMember(
-      Number(req.params.id),
-      Number(req.body.user_id),
-      req.user.user_id,
-      req.user.agency_id, // ✅ CORRECT
-      req.body.role_in_project,
-      req.body.hourly_rate,
+    const {
+      user_id,
+      role_in_project,
+      hourly_rate,
+      is_active = true
+    } = req.body;
+
+    const projectAssignPermission =
+      req.user?.role?.permissions?.projects?.view === "all" ||
+      req.user?.role?.permissions?.projects?.view === "agency" ||
+      req.user?.role?.permissions?.projects?.view === "department" ;
+
+    const projectMember = await projectService.addProjectMember(
+      Number(req.params.id),     // projectId
+      Number(user_id),           // userId
+      req.user.user_id,          // addedBy
+      req.user.role?.name,       // role (optional, if used)
+      role_in_project,
+      hourly_rate,
+      is_active,
+      req.user.agency_id,
+      projectAssignPermission
     );
-    console.log("project" + JSON.stringify(project))
-    return successResponse(res, 'PROJECT_MEMBER_ADDED', project);
+
+    return successResponse(
+      res,
+      'PROJECT_MEMBER_ADDED',
+      projectMember
+    );
   } catch (err) {
     next(err);
   }
@@ -136,17 +152,46 @@ exports.getProjectUsers = async (req, res) => {
   try {
     const projectId = Number(req.params.project_id);
     const loggedInUserId = req.user.user_id;
-
+    const permissions = req.user?.role?.permissions;
+console.log('Fetching users for project:', req.params, 'by user:', req.user);
     if (!projectId) {
       return res.status(400).json({ message: "Invalid project id" });
     }
+console.log('User permissions:', permissions);
+    /* ---------- Permission Check ---------- */
+    const projectViewPermission = permissions?.projects?.view;
+console.log('Project view permission:', projectViewPermission);
+    if (!projectViewPermission) {
+      return res.status(403).json({
+        message: "You do not have permission to view projects",
+      });
+    }
 
+    // Allowed: true | "all" | "agency"
+    if (
+      projectViewPermission !== true &&
+      projectViewPermission !== "all" &&
+      projectViewPermission !== "department" &&
+      projectViewPermission !== "team" &&
+      projectViewPermission !== "assigned" &&
+      projectViewPermission !== "agency" 
+    ) {
+      return res.status(403).json({
+        message: "You do not have permission to view this project",
+      });
+    }
+
+    /* ---------- Fetch Users ---------- */
     const users = await projectService.getAvailableUsersForProject(
       projectId,
-      loggedInUserId
+      loggedInUserId,
+      // projectViewPermission // pass scope if needed
     );
 
-    return res.status(200).json(users);
+    return res.status(200).json({
+      success: true,
+      data: users,
+    });
   } catch (error) {
     console.error("Controller Error:", error);
 
@@ -161,6 +206,7 @@ exports.getProjectUsers = async (req, res) => {
     });
   }
 };
+
 
 exports.getProjectNotes = async (req, res) => {
   try {

@@ -356,7 +356,18 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
 }
 
 /* ---------------- ADD PROJECT MEMBER ---------------- */
-exports.addProjectMember = async (projectId, userId, addedBy,role,  role_in_project,  hourly_rate, is_active, agencyId) => {
+exports.addProjectMember = async (
+  projectId,
+  userId,
+  addedBy,
+  role,
+  role_in_project,
+  hourly_rate,
+  is_active,
+  agencyId,
+  projectAssignPermission
+) => {
+  console.log('Adding member', userId, 'to project', projectId, 'by', addedBy, projectAssignPermission);
   if (!isValidNumber(userId)) {
     throwError('VALIDATION_ERROR', 'Invalid user_id', 'user_id');
   }
@@ -369,14 +380,22 @@ exports.addProjectMember = async (projectId, userId, addedBy,role,  role_in_proj
   if (!project) throwError('NOT_FOUND', 'Project not found');
   if (!user) throwError('NOT_FOUND', 'User not found');
 
+  /* ---------- Agency validation ---------- */
   if (project.agency_id !== user.agency_id) {
     throwError('FORBIDDEN', 'User and project must belong to same agency');
   }
 
-  if (project.project_manager_id !== addedBy) {
-    throwError('FORBIDDEN', 'Only project manager can add members');
+  /* ---------- Permission check ---------- */
+  const isProjectManager = project.project_manager_id === addedBy;
+
+  if (!isProjectManager && projectAssignPermission !== true) {
+    throwError(
+      'FORBIDDEN',
+      'You do not have permission to assign users to this project'
+    );
   }
 
+  /* ---------- Prevent duplicate ---------- */
   const exists = await prisma.projectMember.findFirst({
     where: {
       project_id: projectId,
@@ -389,6 +408,7 @@ exports.addProjectMember = async (projectId, userId, addedBy,role,  role_in_proj
     throwError('DUPLICATE', 'User already added to project', 'user_id');
   }
 
+  /* ---------- Create member ---------- */
   return prisma.projectMember.create({
     data: {
       project_id: projectId,
@@ -441,27 +461,37 @@ exports.getProjectsManagedByUser = async (userId) => {
 
 exports.getAvailableUsersForProject = async (
   projectId,
-  loggedInUserId
+  loggedInUserId,
+  projectViewPermission
 ) => {
-  // 1️⃣ Verify project & manager
+  /* ---------- 1️⃣ Verify project ---------- */
   const project = await prisma.project.findFirst({
     where: {
       project_id: projectId,
-      project_manager_id: loggedInUserId,
       is_active: true,
       is_archived: false,
     },
     select: {
       project_id: true,
       agency_id: true,
+      project_manager_id: true,
     },
   });
 
   if (!project) {
+    throw new Error("PROJECT_NOT_FOUND");
+  }
+
+  /* ---------- 2️⃣ Permission scope check ---------- */
+  // If scope is "own", only project manager allowed
+  if (
+    projectViewPermission === "own" &&
+    project.project_manager_id !== loggedInUserId
+  ) {
     throw new Error("NOT_PROJECT_MANAGER");
   }
 
-  // 2️⃣ Get already assigned users
+  /* ---------- 3️⃣ Get already assigned users ---------- */
   const existingMembers = await prisma.projectMember.findMany({
     where: {
       project_id: projectId,
@@ -474,15 +504,24 @@ exports.getAvailableUsersForProject = async (
 
   const assignedUserIds = existingMembers.map((m) => m.user_id);
 
-  // 3️⃣ Fetch available users
-  return await prisma.user.findMany({
-    where: {
-      agency_id: project.agency_id,
-      is_active: true,
-      user_id: {
-        notIn: assignedUserIds.length ? assignedUserIds : undefined,
-      },
+  /* ---------- 4️⃣ Build user filter based on scope ---------- */
+  const userWhere = {
+    is_active: true,
+    user_id: {
+      notIn: assignedUserIds.length ? assignedUserIds : undefined,
     },
+  };
+
+  // Agency scoped access
+  if (projectViewPermission === "agency") {
+    userWhere.agency_id = project.agency_id;
+  }
+
+  // true / "all" → no agency filter (global users)
+
+  /* ---------- 5️⃣ Fetch users ---------- */
+  return await prisma.user.findMany({
+    where: userWhere,
     select: {
       user_id: true,
       full_name: true,
@@ -493,6 +532,7 @@ exports.getAvailableUsersForProject = async (
     },
   });
 };
+
 
 
 exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {

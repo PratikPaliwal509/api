@@ -17,7 +17,7 @@ const createTask = async (data, userId) => {
   }
 
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
-
+  console.log(JSON.stringify(data))
   return prisma.task.create({
     data: {
       project_id: data.project_id,
@@ -34,7 +34,9 @@ const createTask = async (data, userId) => {
       is_milestone: data.is_milestone,
       is_billable: data.is_billable,
       created_by: userId,
-      tags: data.labels || []
+      tags: data.labels || [],
+      depends_on: data.depends_on || [],
+      blocks: data.blocks || [],
     }
   });
 };
@@ -50,6 +52,9 @@ const getTasks = async (user) => {
 
   switch (scope) {
     case 'all':
+      // No restriction
+      break;
+    case 'agency':
       // No restriction
       break;
 
@@ -172,7 +177,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
   if (!Array.isArray(userIds) || userIds.length === 0) {
     throw new Error('user_ids must be a non-empty array');
   }
-
+console.log('Assigning users', userIds, 'to task', taskId, 'by', assignedBy);
   const ids = userIds
     .map((id) => Number(id))
     .filter((n) => Number.isInteger(n) && n > 0);
