@@ -197,3 +197,42 @@ exports.createUser = async (req, res) => {
     });
   }
 };
+
+// controllers/auth.controller.js
+exports.getUserByToken = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: req.user
+    })
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    })
+  }
+}
+
+exports.getUserByToken = async (req, res) => {
+  try {
+    // token decoded in middleware
+    console.log('Decoded User in Controller:', req.user)
+    console.log('Decoded User in Controller:', req.body)
+    const userId = req.user.user_id
+
+    const user = await usersService.getUserByTokenService(userId)
+
+    return res.status(200).json({
+      success: true,
+      message: 'User fetched successfully',
+      data: user
+    })
+  } catch (error) {
+    console.error('Get user by token error:', error)
+
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Something went wrong'
+    })
+  }
+}

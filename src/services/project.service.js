@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-
+const NotificationService = require('../services/notification.service');
 /* ---------------- HELPERS ---------------- */
 const throwError = (code, message, field = null) => {
   const err = new Error(message);
@@ -122,7 +122,7 @@ exports.createProject = async (data, userId, agencyId) => {
     throwError('FORBIDDEN', 'Cannot create project outside your agency')
   }
 
-  return prisma.project.create({
+  const project = await prisma.project.create({
     data: {
       ...data,
       project_code,   // ✅ auto
@@ -132,6 +132,22 @@ exports.createProject = async (data, userId, agencyId) => {
       created_by: userId,
     },
   })
+
+  console.log("Created project: " + JSON.stringify(project))
+  await NotificationService.createNotification({
+    user_id: project.project_manager_id, // who receives it
+    notification_type: 'PROJECT_CREATED',
+    title: 'Project Created',
+    message: `Project "${project.project_name}" has been created successfully.`,
+    entity_type: 'PROJECT',
+    entity_id: project.project_id,
+    action_url: `/projects/${project.project_id}`,
+    sent_via_email: true,
+    send_to_admin: true,
+    admin_message: `Admin alert: Project "${project.project_name}" has been created.`
+  })
+
+  return project;
 }
 
 /* ---------------- GET PROJECTS ---------------- */
@@ -153,7 +169,7 @@ exports.getProjectsByScope = async (user) => {
     case 'agency':
       console.log("agencycase")
       where.agency_id = user.agency.agency_id;
-    where.is_active = true;
+      where.is_active = true;
       // agency filter already applied
       break;
 
@@ -243,7 +259,7 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   });
 
   if (!project) throwError('NOT_FOUND', 'Project not found');
-console.log({ project, agencyId, userId })
+  console.log({ project, agencyId, userId })
   // Access rules: allow if same agency, or the requesting user is project manager,
   // the creator, or is a project member.
   const isSameAgency = project.agency_id === agencyId;
@@ -251,7 +267,7 @@ console.log({ project, agencyId, userId })
   const isCreator = project.created_by === userId;
   const memberIds = (project.projectMembers || []).map((m) => m.user_id);
   const isMember = memberIds.includes(userId);
-console.log({ isSameAgency, isManager, isCreator, isMember })
+  console.log({ isSameAgency, isManager, isCreator, isMember })
   if (!isSameAgency && !isManager && !isCreator && !isMember) {
     throwError('FORBIDDEN', 'You do not have access to this project');
   }
@@ -326,10 +342,49 @@ exports.updateProject = async (projectId, data, userId) => {
     throwError('FORBIDDEN', 'Only project manager can update project');
   }
 
-  return prisma.project.update({
+  const updatedProject = await prisma.project.update({
     where: { project_id: projectId },
     data: updateData
   });
+
+  console.log("Updated project: " + JSON.stringify(updatedProject))
+  // =========================
+  // 🔔 PROJECT UPDATED NOTIFICATION
+  // =========================
+
+  // Notify current project manager
+  await NotificationService.createNotification({
+    user_id: updatedProject.project_manager_id,
+    notification_type: 'PROJECT_UPDATED',
+    title: 'Project Updated',
+    message: `Project "${updatedProject.project_name}" has been updated.`,
+    entity_type: 'PROJECT',
+    entity_id: updatedProject.project_id,
+    action_url: `/projects/${updatedProject.project_id}`,
+    sent_via_email: true,
+    send_to_admin: true,
+    admin_message: `Admin alert: Project "${updatedProject.project_name}" has been updated.`
+  });
+
+  // If project manager changed → notify new manager separately
+  if (
+    updateData.project_manager_id &&
+    updateData.project_manager_id !== project.project_manager_id
+  ) {
+    await NotificationService.createNotification({
+      user_id: updateData.project_manager_id,
+      notification_type: 'PROJECT_ASSIGNED',
+      title: 'New Project Assigned',
+      message: `You have been assigned as project manager for "${updatedProject.project_name}".`,
+      entity_type: 'PROJECT',
+      entity_id: updatedProject.project_id,
+      action_url: `/projects/${updatedProject.project_id}`,
+      sent_via_email: true,
+      send_to_admin: true
+    });
+  }
+
+  return updatedProject;
 };
 
 
@@ -352,6 +407,19 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
     data: { status },
   })
 
+  await NotificationService.createNotification({
+    user_id: project.project_manager_id,
+    notification_type: 'PROJECT_STATUS_UPDATED',
+    title: 'Project Status Updated',
+    message: `Project "${project.project_name}" status changed from "${project.status}" to "${status}".`,
+    entity_type: 'PROJECT',
+    entity_id: project.project_id,
+    action_url: `/projects/${project.project_id}`,
+    sent_via_email: true,
+    send_to_admin: true,
+    admin_message: `Admin alert: ${project.project_name}" status changed from "${project.status}" to "${status}`
+  })
+
   return updatedProject
 }
 
@@ -372,10 +440,25 @@ exports.addProjectMember = async (
     throwError('VALIDATION_ERROR', 'Invalid user_id', 'user_id');
   }
 
-  const [project, user] = await Promise.all([
-    prisma.project.findUnique({ where: { project_id: projectId } }),
-    prisma.user.findUnique({ where: { user_id: userId } })
-  ]);
+  const [project, user, addedByUser] = await Promise.all([
+    prisma.project.findUnique({
+      where: { project_id: projectId },
+      select: {
+        project_id: true,
+        project_name: true,
+        project_manager_id: true,
+        agency_id: true
+      }
+    }),
+    prisma.user.findUnique({
+      where: { user_id: userId },
+      select: { user_id: true, first_name: true, agency_id: true }
+    }),
+    prisma.user.findUnique({
+      where: { user_id: addedBy },
+      select: { first_name: true }
+    })
+  ])
 
   if (!project) throwError('NOT_FOUND', 'Project not found');
   if (!user) throwError('NOT_FOUND', 'User not found');
@@ -400,7 +483,7 @@ exports.addProjectMember = async (
     where: {
       project_id: projectId,
       user_id: userId,
-      is_active: true
+      is_active: true    
     }
   });
 
@@ -409,7 +492,7 @@ exports.addProjectMember = async (
   }
 
   /* ---------- Create member ---------- */
-  return prisma.projectMember.create({
+  const projectMember = await prisma.projectMember.create({
     data: {
       project_id: projectId,
       user_id: userId,
@@ -419,6 +502,43 @@ exports.addProjectMember = async (
       is_active,
     }
   });
+
+  // =========================
+  // 🔔 NOTIFICATIONS
+  // =========================
+
+  // 1️⃣ Notify added user (+ admins)
+  await NotificationService.createNotification({
+    user_id: user.user_id,
+    notification_type: 'PROJECT_MEMBER_ADDED',
+    title: 'Added to Project',
+    message: `You have been added to the project "${project.project_name}" by ${addedByUser?.first_name || 'a manager'}.`,
+    entity_type: 'PROJECT',
+    entity_id: project.project_id,
+    action_url: `/projects/${project.project_id}`,
+    sent_via_email: true,
+    send_to_admin: true,
+    admin_message: `Admin alert: ${user.first_name} added to ${project.project_name}`
+  })
+
+  // 2️⃣ Notify project manager (ONLY if different user) (+ admins)
+  if (project.project_manager_id !== user.user_id) {
+    await NotificationService.createNotification({
+      user_id: project.project_manager_id,
+      notification_type: 'PROJECT_MEMBER_ADDED',
+      title: 'Project Member Added',
+      message: `${user.first_name} was added to project "${project.project_name}".`,
+      entity_type: 'PROJECT',
+      entity_id: project.project_id,
+      action_url: `/projects/${project.project_id}`,
+      sent_via_email: false,
+      send_to_admin: true,
+      admin_message: `Admin alert: ${user.first_name} added to ${project.project_name}`
+    })
+  }
+
+  return projectMember
+
 };
 
 /* ---------------- REMOVE PROJECT MEMBER ---------------- */
@@ -533,8 +653,6 @@ exports.getAvailableUsersForProject = async (
   });
 };
 
-
-
 exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
   const where = {
     notes: { not: null }
@@ -560,7 +678,7 @@ exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
     where,
     select: {
       project_id: true,
-      project_name:true,
+      project_name: true,
       notes: true,
       created_at: true,
       updated_at: true,
@@ -572,15 +690,15 @@ exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
 }
 
 exports.addProjectNoteService = async ({ project_id, title, notes, userId }) => {
-    if (!project_id) throw new Error("Project ID is required")
-    return prisma.project.update({
-        where: { project_id },
-        data: {
-            notes,
-            updated_at: new Date(),
-            created_by: userId // optional
-        }
-    })
+  if (!project_id) throw new Error("Project ID is required")
+  return prisma.project.update({
+    where: { project_id },
+    data: {
+      notes,
+      updated_at: new Date(),
+      created_by: userId // optional
+    }
+  })
 }
 
 exports.getProjectsWithoutNotesService = async (agency_id) => {

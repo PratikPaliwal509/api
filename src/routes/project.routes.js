@@ -1,8 +1,7 @@
 const express = require('express');
-const router = express.Router();
-
-const authMiddleware = require('../middlewares/auth.middleware');
 const logActivity = require('../middlewares/activityLog.middleware');
+const router = express.Router();
+const authMiddleware = require('../middlewares/auth.middleware');
 const projectController = require('../controllers/project.controller');
 
 router.get("/notes", authMiddleware, projectController.getProjectNotes)
@@ -59,8 +58,18 @@ router.patch('/:id/status', authMiddleware, projectController.updateProjectStatu
 router.delete(
   '/:projectId/members/:userId',
   authMiddleware,
+  // Need to check, not veriied
+   logActivity({
+    action: 'REMOVE MEMBER',
+    entityType: 'Project',
+    getEntityId: (req) => Number(req.params.projectId),
+    getDescription: (req) =>
+      `Removed user ${req.params.userId} from project`,
+    getChanges: (req) => ({ removed_user_id: Number(req.params.userId) })
+  }),
   projectController.leaveProjectController
 )
+
 router.get(
   "/:project_id/users",
   authMiddleware,

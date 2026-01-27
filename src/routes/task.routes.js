@@ -60,6 +60,6 @@ router.get('/:taskId/subtasks', taskController.getSubtasks);
 
 router.post('/:taskId/checklist', taskController.addTaskChecklist)
 
-router.patch('/:taskId/assignments/:userId/remove', authMiddleware, taskController.removeAssignment)
+router.patch('/:taskId/assignments/:userId/remove', authMiddleware, taskController.removeAssignment, )
 
 module.exports = router;

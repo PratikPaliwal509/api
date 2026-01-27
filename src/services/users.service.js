@@ -113,3 +113,45 @@ exports.getUsersWithoutTeam = async (agency_id) => {
   })
 }
 
+exports.getUserByTokenService = async (userId) => {
+  if (!userId) {
+    const error = new Error('Invalid token')
+    error.status = 401
+    throw error
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      user_id: Number(userId)
+    },
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      is_active: true,
+      created_at: true,
+      role: {
+        select: {
+          role_id: true,
+          role_name: true,
+          permissions: true
+        }
+      }
+    }
+  })
+
+  if (!user) {
+    const error = new Error('User not found')
+    error.status = 404
+    throw error
+  }
+
+  if (!user.is_active) {
+    const error = new Error('User is inactive')
+    error.status = 403
+    throw error
+  }
+
+  return user
+}

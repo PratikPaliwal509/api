@@ -1,5 +1,5 @@
 const prisma = require('../config/db');
-
+const NotificationService = require('../services/notification.service');
 /**
  * Create Task / Subtask
  */
@@ -18,7 +18,7 @@ const createTask = async (data, userId) => {
 
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
   console.log(JSON.stringify(data))
-  return prisma.task.create({
+  const task = await prisma.task.create({
     data: {
       project_id: data.project_id,
       parent_task_id: data.parent_task_id || null,
@@ -39,6 +39,25 @@ const createTask = async (data, userId) => {
       blocks: data.blocks || [],
     }
   });
+
+  await NotificationService.createNotification({
+    user_id: userId, // who created task
+    notification_type: 'TASK_CREATED',
+    title: 'New Task Created',
+    message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
+    entity_type: 'TASK',
+    entity_id: task.task_id,
+    action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+
+    // delivery
+    sent_via_email: true,
+    sent_via_push: false,
+
+    // admin config
+    send_to_admin: true,
+    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
+  })
+  return task;
 };
 
 /**
@@ -177,7 +196,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
   if (!Array.isArray(userIds) || userIds.length === 0) {
     throw new Error('user_ids must be a non-empty array');
   }
-console.log('Assigning users', userIds, 'to task', taskId, 'by', assignedBy);
+  console.log('Assigning users', userIds, 'to task', taskId, 'by', assignedBy);
   const ids = userIds
     .map((id) => Number(id))
     .filter((n) => Number.isInteger(n) && n > 0);
@@ -225,6 +244,25 @@ console.log('Assigning users', userIds, 'to task', taskId, 'by', assignedBy);
       assigned_date: new Date(),
     },
   })
+
+  for (const userId of userIds) {
+    await NotificationService.createNotification({
+      user_id: userId,
+      notification_type: 'TASK_ASSIGNED',
+      title: 'Task Assigned to You',
+      message: `You have been assigned to task "${task.task_title}" (${task.task_number}).`,
+      entity_type: 'TASK',
+      entity_id: task.task_id,
+      action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+
+      sent_via_email: true,
+      sent_via_push: false,
+
+      // 🔔 also notify admins
+      send_to_admin: true,
+      admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`
+    })
+  }
 
 
   return { success: true, assigned_user_ids: foundIds };
@@ -280,7 +318,7 @@ const addChecklistToTask = async (taskId, checklist) => {
   })
 }
 
-
+// Need to add logic to check preiously added users not assign again same task it is giving error 
 const removeTaskAssignment = async ({
   task_id,
   user_id,
@@ -328,20 +366,19 @@ const removeTaskAssignment = async ({
     .filter(id => Number(id) !== Number(user_id))
 
   const [updatedAssignment, updatedTask] = await prisma.$transaction([
-    prisma.taskAssignment.update({
+    prisma.taskAssignment.updateMany({
       where: {
-        task_id_user_id_is_active: {
-          task_id,
-          user_id,
-          is_active: true,
-        },
+        task_id,
+        user_id,
+        is_active: true,
       },
       data: {
         is_active: false,
         removed_at: new Date(),
         removed_by,
       },
-    }),
+    })
+    ,
 
     prisma.task.update({
       where: { task_id },

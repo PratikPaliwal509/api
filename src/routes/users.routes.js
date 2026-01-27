@@ -6,6 +6,10 @@ const authMiddleware = require('../middlewares/auth.middleware')
 // GET ALL USERS
 router.get('/user', authMiddleware, usersController.getAllUsers)
 router.post("/users", authMiddleware, usersController.createUser);
+
+
+
+router.get('/me', authMiddleware, usersController.getUserByToken)
 // routes/users.routes.js
 
 router.get('/users/by-agency', authMiddleware, usersController.getUsersBySameAgency)
@@ -15,4 +19,6 @@ router.get('/managers/:agencyId',authMiddleware, usersController.getManagersByAg
 
 router.get('/users/without-team', authMiddleware, usersController.getUsersWithoutTeam)
 router.get("/:id", usersController.getUserByIdController);
+
+
 module.exports = router
