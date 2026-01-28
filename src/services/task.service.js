@@ -143,7 +143,7 @@ const getTasks = async (user) => {
     include: {
       subtasks: true,
       assignments: {
-        where: { is_active: true },
+        // where: { is_active: true },
         include: {
           user: {
             select: {
@@ -380,13 +380,13 @@ const removeTaskAssignment = async ({
     })
     ,
 
-    prisma.task.update({
-      where: { task_id },
-      data: {
-        assigned_to: updatedAssignedTo,
-        updated_at: new Date(),
-      },
-    }),
+    // prisma.task.update({
+    //   where: { task_id },
+    //   data: {
+    //     assigned_to: updatedAssignedTo,
+    //     updated_at: new Date(),
+    //   },
+    // }),
   ])
 
   return {

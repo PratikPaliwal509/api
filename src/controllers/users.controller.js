@@ -1,6 +1,5 @@
 const usersService = require('../services/users.service')
 
-
 exports.getUserByIdController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -142,61 +141,61 @@ exports.getUsersWithoutTeam = async (req, res, next) => {
   }
 }
 
-exports.createUser = async (req, res) => {
-  try {
-    const {
-      first_name,
-      last_name,
-      email,
-      password,
-      confirm_password,
-      role_id,
-      department_id
-    } = req.body;
+// exports.createUser = async (req, res) => {
+//   try {
+//     const {
+//       first_name,
+//       last_name,
+//       email,
+//       password,
+//       confirm_password,
+//       role_id,
+//       department_id
+//     } = req.body;
 
-    // Required field validation
-    if (
-      !first_name ||
-      !last_name ||
-      !email ||
-      !password ||
-      !confirm_password ||
-      !role_id ||
-      !department_id
-    ) {
-      return res.status(400).json({
-        message: "All required fields must be provided"
-      });
-    }
+//     // Required field validation
+//     if (
+//       !first_name ||
+//       !last_name ||
+//       !email ||
+//       !password ||
+//       !confirm_password ||
+//       !role_id ||
+//       !department_id
+//     ) {
+//       return res.status(400).json({
+//         message: "All required fields must be provided"
+//       });
+//     }
 
-    if (password !== confirm_password) {
-      return res.status(400).json({
-        message: "Password and confirm password do not match"
-      });
-    }
+//     if (password !== confirm_password) {
+//       return res.status(400).json({
+//         message: "Password and confirm password do not match"
+//       });
+//     }
 
-    const user = await userService.createUser({
-      first_name,
-      last_name,
-      email,
-      password,
-      role_id,
-      department_id,
-      created_by: req.user?.user_id || null // optional (from auth middleware)
-    });
+//     const user = await userService.createUser({
+//       first_name,
+//       last_name,
+//       email,
+//       password,
+//       role_id,
+//       department_id,
+//       created_by: req.user?.user_id || null // optional (from auth middleware)
+//     });
 
-    return res.status(201).json({
-      message: "User created successfully",
-      data: user
-    });
-  } catch (error) {
-    console.error(error);
+//     return res.status(201).json({
+//       message: "User created successfully",
+//       data: user
+//     });
+//   } catch (error) {
+//     console.error(error);
 
-    return res.status(500).json({
-      message: error.message || "Internal server error"
-    });
-  }
-};
+//     return res.status(500).json({
+//       message: error.message || "Internal server error"
+//     });
+//   }
+// };
 
 // controllers/auth.controller.js
 exports.getUserByToken = async (req, res) => {
@@ -233,6 +232,24 @@ exports.getUserByToken = async (req, res) => {
     return res.status(error.status || 500).json({
       success: false,
       message: error.message || 'Something went wrong'
+    })
+  }
+}
+
+exports.createUser = async (req, res) => {
+  try {
+    const user = await usersService.createUser(req.body)
+
+    return res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: user,
+    })
+  } catch (error) {
+    console.error('Create User Error:', error)
+    return res.status(400).json({
+      success: false,
+      message: error.message,
     })
   }
 }

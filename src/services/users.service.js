@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const bcrypt = require('bcryptjs')
 // GET ALL USERS
 exports.getAllUsers = async () => {
   return prisma.user.findMany({
@@ -152,6 +153,62 @@ exports.getUserByTokenService = async (userId) => {
     error.status = 403
     throw error
   }
+
+  return user
+}
+
+exports.createUser = async (data) => {
+  const {
+    first_name,
+    last_name,
+    email,
+    password,
+    role_id,
+    agency_id,
+  } = data.formData;
+console.log('Creating user with data:', data);
+  // check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  })
+
+  if (existingUser) {
+    throw new Error('User already exists with this email')
+  }
+
+  // hash password
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  // create user
+  const user = await prisma.user.create({
+    data: {
+      first_name,
+      last_name,
+      email,
+      password_hash: hashedPassword,
+      // role_id,
+      // agency_id,
+      is_active: true,
+      agency: {
+      connect: {
+        agency_id: Number(agency_id), // 👈 REQUIRED
+      },
+    },
+      role: {
+      connect: {
+        role_id: Number(role_id), // 👈 REQUIRED
+      },
+    },
+  },
+    select: {
+      user_id: true,
+      full_name: true,
+      email: true,
+      role_id: true,
+      created_at: true,
+    },
+  
+  })
 
   return user
 }
