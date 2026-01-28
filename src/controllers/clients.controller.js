@@ -7,6 +7,7 @@ exports.createClient = async (req, res, next) => {
     const clientData = {
       ...req.body,
       created_by: req.user.user_id, // add logged-in user here
+      agency_id: req.user.agency.agency_id, 
     };
 
     const client = await clientsService.createClient(clientData);
