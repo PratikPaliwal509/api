@@ -8,6 +8,11 @@ const throwError = (code, message, field = null) => {
   throw err;
 };
 
+const sanitizeDecimal = (value) => {
+  if (value === "" || value === undefined) return null
+  return value
+}
+
 const isValidNumber = (v) => Number.isInteger(v) && v > 0;
 
 const PROJECT_TYPES = Object.freeze({
@@ -125,6 +130,7 @@ exports.createProject = async (data, userId, agencyId) => {
   const project = await prisma.project.create({
     data: {
       ...data,
+      estimated_hours: sanitizeDecimal(data.estimated_hours),
       project_code,   // ✅ auto
       task_prefix,    // ✅ auto
       start_date: start_date ? new Date(start_date) : null,

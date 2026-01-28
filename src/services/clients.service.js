@@ -148,7 +148,9 @@ exports.getAllClients = async (agency_id) => {
 exports.updateClient = async (id, data) => {
   await exports.getClientById(id);
 
-   if (data.portal_user_id) {
+   if (data.portal_user_id === '' || data.portal_user_id === undefined) {
+    data.portal_user_id = null;
+  } else {
     data.portal_user_id = Number(data.portal_user_id);
   }
 
