@@ -400,11 +400,14 @@ exports.updateUser = async (userId, data) => {
     err.statusCode = 404
     throw err
   }
-
+   // reset team if department changes
   // ✅ Update user
   return prisma.user.update({
     where: { user_id: userId },
-    data: updateData,
+    data: {...updateData,
+      department_id: updateData.department_id ? Number(updateData.department_id) : null,
+      team_id: updateData.team_id ? Number(updateData.team_id) : null
+    },
     select: {
       user_id: true,
       first_name: true,
