@@ -150,6 +150,13 @@ exports.getUserByTokenService = async (userId) => {
       email: true,
       is_active: true,
       created_at: true,
+      phone: true,
+      mobile: true,
+      avatar_url: true,
+      bio: true,
+      job_title: true,
+      date_of_joining: true,
+      timezone: true,
       role: {
         select: {
           role_id: true,
@@ -253,37 +260,52 @@ exports.createUser = async (data) => {
 }
 
 exports.updateProfile = async (userId, data) => {
+  console.log('Updating user:', userId, 'with data:', data);
+
   const allowedFields = [
-    "first_name",
-    "last_name",
-    // "phone",
-    // "avatar",
-    // "gender",
-    // "date_of_birth",
+    'first_name',
+    'last_name',
+    'phone',
+    'mobile',
+    'avatar_url', // ✅ Cloudinary URL
+    'bio',
+    'job_title',
+    'date_of_joining',
+    'timezone',
+    'language',
+    'notification_preferences',
   ];
 
   const updateData = {};
-console.log('Updating user:', userId, 'with data:', data);  
+
   for (const field of allowedFields) {
+     if (data[field] === "") {
+  delete data[field];
+}
     if (data[field] !== undefined) {
       updateData[field] = data[field];
+      console.log(`Updating field: ${field} with value: ${data[field]}`);
     }
+   
+
   }
 
   if (Object.keys(updateData).length === 0) {
-    const err = new Error("No valid fields provided for update");
+    const err = new Error('No valid fields provided for update');
     err.statusCode = 400;
     throw err;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { user_id: Number(userId) },
-  });
+  // Optional: auto-update full_name
+  if (updateData.first_name || updateData.last_name) {
+    const user = await prisma.user.findUnique({
+      where: { user_id: Number(userId) },
+      select: { first_name: true, last_name: true },
+    });
 
-  if (!user) {
-    const err = new Error("User not found");
-    err.statusCode = 404;
-    throw err;
+    updateData.first_name ??= user.first_name;
+    updateData.last_name ??= user.last_name;
+    updateData.full_name = `${updateData.first_name} ${updateData.last_name}`;
   }
 
   return prisma.user.update({
@@ -293,13 +315,20 @@ console.log('Updating user:', userId, 'with data:', data);
       user_id: true,
       first_name: true,
       last_name: true,
+      full_name: true,
       email: true,
       phone: true,
-      avatar: true,
-      gender: true,
-      date_of_birth: true,
+      mobile: true,
+      avatar_url: true,
+      bio: true,
+      job_title: true,
+      date_of_joining: true,
+      timezone: true,
+      language: true,
+      notification_preferences: true,
       updated_at: true,
     },
   });
 };
+
 

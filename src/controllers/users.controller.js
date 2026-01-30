@@ -268,28 +268,23 @@ console.log("Payload in Controller:", payload)
 exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-console.log('Update Profile Req Body:', req.body);
-    const updateData = {
-      ...req.body,
-    };
 
-    // ✅ Multer avatar
-    if (req.file) {
-      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
-    }
+    console.log('Update Profile Req Body:', req.body);
 
     const updatedUser = await usersService.updateProfile(
       userId,
-      updateData
+      req.body
     );
 
-    return successResponse(
-      res,
-      "Profile updated successfully",
-      updatedUser
-    );
+    return res.status(200).json({
+  success: true,
+  message: 'Profile updated successfully',
+  data: updatedUser,
+});
+
   } catch (error) {
     next(error);
   }
 };
+
 
