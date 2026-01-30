@@ -238,8 +238,15 @@ exports.getUserByToken = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const user = await usersService.createUser(req.body)
-
+    console.log('Create User Req Body:', req.user.user_id  )
+  const createdBy = req.user.user_id  
+  const payload = {
+      ...req.body,
+      created_by: createdBy,
+      
+    };
+console.log("Payload in Controller:", payload)
+    const user = await usersService.createUser(payload)
     return res.status(201).json({
       success: true,
       message: 'User created successfully',
@@ -247,9 +254,42 @@ exports.createUser = async (req, res) => {
     })
   } catch (error) {
     console.error('Create User Error:', error)
-    return res.status(400).json({
+
+    return res.status(
+      error.message.includes('already exists') ? 409 : 400
+    ).json({
       success: false,
       message: error.message,
     })
   }
 }
+
+// UPDATE PROFILE
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+console.log('Update Profile Req Body:', req.body);
+    const updateData = {
+      ...req.body,
+    };
+
+    // ✅ Multer avatar
+    if (req.file) {
+      updateData.avatar = `/uploads/avatars/${req.file.filename}`;
+    }
+
+    const updatedUser = await usersService.updateProfile(
+      userId,
+      updateData
+    );
+
+    return successResponse(
+      res,
+      "Profile updated successfully",
+      updatedUser
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -1,35 +1,67 @@
 const prisma = require('../config/db');
 
 // CREATE DEPARTMENT 
+
 exports.createDepartment = async (data) => {
-  const { agency_id, department_name } = data;
+  try {
+    const { agency_id, department_name, department_code } = data
 
-  if (!agency_id || !department_name) {
-    throw new Error('DEPARTMENT_REQUIRED_FIELDS_MISSING');
-  }
-
-  const agency = await prisma.agency.findUnique({
-    where: { agency_id: Number(agency_id) }
-  });
-
-  if (!agency) {
-    throw new Error('AGENCY_NOT_FOUND');
-  }
-
-  const existingDepartment = await prisma.department.findFirst({
-    where: {
-      agency_id: Number(agency_id),
-      department_name
+    if (!agency_id || !department_name || !department_code?.trim()) {
+      throw new Error('DEPARTMENT_REQUIRED_FIELDS_MISSING')
     }
-  });
 
-  if (existingDepartment) {
-    throw new Error('DEPARTMENT_ALREADY_EXISTS');
+    const agency = await prisma.agency.findUnique({
+      where: { agency_id: Number(agency_id) },
+    })
+
+    if (!agency) {
+      throw new Error('AGENCY_NOT_FOUND')
+    }
+
+    // optional: name-level check
+    const existingDepartment = await prisma.department.findFirst({
+      where: {
+        agency_id: Number(agency_id),
+        department_name,
+      },
+    })
+    const existingDepartmentCode = await prisma.department.findFirst({
+      where: {
+        agency_id: Number(agency_id),
+        department_code,
+      },
+    })
+
+    if (existingDepartment) {
+      throw new Error('DEPARTMENT_ALREADY_EXISTS')
+    }
+    if (existingDepartmentCode) {
+      throw new Error('DEPARTMENT_CODE_ALREADY_EXISTS')
+    }
+
+    const manager_id =
+      data.manager_id && Number(data.manager_id) > 0
+        ? Number(data.manager_id)
+        : null
+
+    return await prisma.department.create({
+      data: {
+        ...data,
+        manager_id,
+      },
+    })
+  } catch (error) {
+    // ✅ HANDLE UNIQUE CONSTRAINT
+    // if (
+    //   error instanceof Prisma.PrismaClientKnownRequestError &&
+    //   error.code === 'P2002'
+    // ) {
+    //   throw new Error('DEPARTMENT_CODE_ALREADY_EXISTS')
+    // }
+
+    throw error
   }
-  return prisma.department.create({
-    data
-  });
-};
+}
 
 // services/departments.service.js
 

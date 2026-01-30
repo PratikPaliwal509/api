@@ -63,7 +63,9 @@ exports.createTeam = async (data) => {
     if (!teamLead) throw new Error('TEAM_LEAD_NOT_FOUND');
   }
 
+
   // ✅ Use transaction to keep data consistent
+  try {
   const team = await prisma.$transaction(async (tx) => {
     // 1️⃣ Create team
     const createdTeam = await tx.team.create({
@@ -98,6 +100,12 @@ exports.createTeam = async (data) => {
   });
 
   return team;
+} catch (error) {
+    if (error.code === 'P2002') {
+      throw new Error('TEAM_CODE_ALREADY_EXISTS')
+    }
+    throw error
+}
 };
 
 // services/teams.service.js

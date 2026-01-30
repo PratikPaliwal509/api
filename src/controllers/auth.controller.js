@@ -29,8 +29,17 @@ const login = async (req, res, next) => {
     const result = await loginService(email, password, login_ip)
 
     return successResponse(res, 'Login successful', result)
-  } catch (err) {
-    next(err)
+  } catch (error) {
+      let message = 'Something went wrong'
+
+    if (error.message === 'INVALID_CREDENTIALS') {
+      message = 'Invalid Email or Password'
+    }
+
+    res.status(401).json({
+      success: false,
+      message,
+    })
   }
 }
 

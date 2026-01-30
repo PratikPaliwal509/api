@@ -46,8 +46,22 @@ exports.updateRole = async (req, res, next) => {
 exports.deleteRole = async (req, res, next) => {
   try {
     await rolesService.deleteRole(req.params.id);
-    return successResponse(res, 'Role deleted successfully');
+    return res.status(200).json({
+      success: true,
+      message: 'Role deleted successfully',
+    });
   } catch (error) {
-    next(error);
+    console.error('Delete Role Error:', error); // ✅ Log the full error
+
+    // Send proper error message to frontend
+    let message = 'Failed to delete role';
+    if (error.message === 'SYSTEM_ROLE_CANNOT_BE_DELETED') {
+      message = 'This system role cannot be deleted';
+    }
+
+    return res.status(400).json({
+      success: false,
+      message,
+    });
   }
 };

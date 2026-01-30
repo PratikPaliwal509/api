@@ -10,6 +10,7 @@ router.post("/users", authMiddleware, usersController.createUser);
 
 
 router.get('/me', authMiddleware, usersController.getUserByToken)
+router.put('/mee', authMiddleware, usersController.updateProfile)
 // routes/users.routes.js
 
 router.get('/users/by-agency', authMiddleware, usersController.getUsersBySameAgency)

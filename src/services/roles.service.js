@@ -29,7 +29,7 @@ exports.createRole = async (data) => {
 // LIST ROLES
 exports.getRoles = async () => {
   return prisma.role.findMany({
-    where: { },
+    where: {},
     orderBy: { created_at: 'desc' }
   });
 };
@@ -54,21 +54,27 @@ exports.updateRole = async (id, data) => {
   return prisma.role.update({
     where: { role_id: Number(id) },
     data: {
-        ...data,
-        updated_at: new Date(), // ✅ ensure timestamp update
-      },
+      ...data,
+      updated_at: new Date(), // ✅ ensure timestamp update
+    },
   });
 };
 
 // DELETE ROLE (SOFT DELETE LOGIC OPTIONAL)
 exports.deleteRole = async (id) => {
-  const role = await exports.getRoleById(id);
+  try {
+    const role = await exports.getRoleById(id);
 
-  if (role.is_system_role) {
-    throw new Error('SYSTEM_ROLE_CANNOT_BE_DELETED');
+    if (role.is_system_role) {
+      throw new Error('SYSTEM_ROLE_CANNOT_BE_DELETED');
+    }
+
+    return prisma.role.delete({
+      where: { role_id: Number(id) }
+    });
   }
-
-  return prisma.role.delete({
-    where: { role_id: Number(id) }
-  });
+  catch (error) {
+    console.error('RolesService.deleteRole Error:', error); // ✅ Log error in service too
+    throw error; // Re-throw for controller to handle
+  }
 };

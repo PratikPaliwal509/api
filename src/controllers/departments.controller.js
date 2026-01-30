@@ -22,7 +22,21 @@ exports.createDepartment = async (req, res, next) => {
     const department = await departmentsService.createDepartment(departmentData);
     return successResponse(res, 'Department created successfully', department);
   } catch (error) {
-    next(error);
+  console.log('Create Department Error:', error)
+
+  return res.status(400).json({
+    success: false,
+    message:
+      error.message === 'DEPARTMENT_REQUIRED_FIELDS_MISSING'
+        ? 'Required fields are missing'
+        : error.message === 'AGENCY_NOT_FOUND'
+        ? 'Agency not found'
+        : error.message === 'DEPARTMENT_ALREADY_EXISTS'
+        ? 'Department name already exists'
+        : error.message === 'DEPARTMENT_CODE_ALREADY_EXISTS'
+        ? 'Department code already exists for this agency'
+        : 'Failed to create department',
+  })
   }
 };
 

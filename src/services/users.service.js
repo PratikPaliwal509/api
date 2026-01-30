@@ -1,16 +1,34 @@
 const prisma = require('../config/db');
 const bcrypt = require('bcryptjs')
+
+
+const generateEmployeeId = async () => {
+  const lastUser = await prisma.user.findFirst({
+    orderBy: { user_id: 'desc' },
+    select: { employee_id: true },
+  })
+
+  if (!lastUser || !lastUser.employee_id) {
+    return 'EMP-0001'
+  }
+
+  const lastNumber = parseInt(lastUser.employee_id.split('-')[1])
+  const newNumber = lastNumber + 1
+
+  return `EMP-${String(newNumber).padStart(4, '0')}`
+}
 // GET ALL USERS
 exports.getAllUsers = async () => {
   return prisma.user.findMany({
-    
+
   })
 }
 
 exports.getUserById = async (userId) => {
   return prisma.user.findUnique({
     where: { user_id: userId },
-    select: { agency_id: true, user_id: true,
+    select: {
+      agency_id: true, user_id: true,
       full_name: true,
       email: true,
       role_id: true,
@@ -26,26 +44,26 @@ exports.getUserById = async (userId) => {
           department_name: true,
         },
       },
-     },
+    },
   })
 }
 
 exports.getUsersByAgencyId = async (agencyId) => {
-    return prisma.user.findMany({
-        where: {
-            agency_id: Number(agencyId) 
-        },
-        // select: {
-        //     user_id: true,
-        //     name: true,
-        //     email: true,
-        //     role_id: true,
-        //     agency_id: true
-        // },
-        // orderBy: {
-        //     name: 'asc'
-        // }
-    })
+  return prisma.user.findMany({
+    where: {
+      agency_id: Number(agencyId)
+    },
+    // select: {
+    //     user_id: true,
+    //     name: true,
+    //     email: true,
+    //     role_id: true,
+    //     agency_id: true
+    // },
+    // orderBy: {
+    //     name: 'asc'
+    // }
+  })
 }
 
 exports.getManagersByAgencyId = async (agencyId) => {
@@ -79,7 +97,7 @@ exports.getUsersByAgencyId = async (agencyId) => {
       user_id: true,
       first_name: true,
       last_name: true,
-      team_id:true,
+      team_id: true,
       email: true,
       role: true,
     },
@@ -165,8 +183,13 @@ exports.createUser = async (data) => {
     password,
     role_id,
     agency_id,
+    bio,
+    date_of_joining,
+    hourly_rate,
+    job_title
   } = data.formData;
-console.log('Creating user with data:', data);
+  const created_by = data.created_by;
+  console.log('Creating user with data:', data);
   // check if user already exists
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -178,6 +201,13 @@ console.log('Creating user with data:', data);
 
   // hash password
   const hashedPassword = await bcrypt.hash(password, 10)
+  const employee_id = await generateEmployeeId()
+  const parsedDateOfJoining =
+  date_of_joining ? new Date(date_of_joining) : null
+  const parsedHourlyRate =
+  hourly_rate !== undefined && hourly_rate !== ''
+    ? Number(hourly_rate)
+    : null
 
   // create user
   const user = await prisma.user.create({
@@ -186,20 +216,28 @@ console.log('Creating user with data:', data);
       last_name,
       email,
       password_hash: hashedPassword,
+      employee_id: employee_id,
+      bio,
+      date_of_joining:parsedDateOfJoining,
+      hourly_rate:parsedHourlyRate,
+      job_title,
       // role_id,
       // agency_id,
       is_active: true,
       agency: {
-      connect: {
-        agency_id: Number(agency_id), // 👈 REQUIRED
+        connect: {
+          agency_id: Number(agency_id), // 👈 REQUIRED
+        },
       },
-    },
       role: {
-      connect: {
-        role_id: Number(role_id), // 👈 REQUIRED
+        connect: {
+          role_id: Number(role_id), // 👈 REQUIRED
+        },
       },
+      creator: {
+      connect: { user_id: created_by },
     },
-  },
+    },
     select: {
       user_id: true,
       full_name: true,
@@ -207,8 +245,61 @@ console.log('Creating user with data:', data);
       role_id: true,
       created_at: true,
     },
-  
+
   })
 
   return user
+
 }
+
+exports.updateProfile = async (userId, data) => {
+  const allowedFields = [
+    "first_name",
+    "last_name",
+    // "phone",
+    // "avatar",
+    // "gender",
+    // "date_of_birth",
+  ];
+
+  const updateData = {};
+console.log('Updating user:', userId, 'with data:', data);  
+  for (const field of allowedFields) {
+    if (data[field] !== undefined) {
+      updateData[field] = data[field];
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    const err = new Error("No valid fields provided for update");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { user_id: Number(userId) },
+  });
+
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return prisma.user.update({
+    where: { user_id: Number(userId) },
+    data: updateData,
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      phone: true,
+      avatar: true,
+      gender: true,
+      date_of_birth: true,
+      updated_at: true,
+    },
+  });
+};
+

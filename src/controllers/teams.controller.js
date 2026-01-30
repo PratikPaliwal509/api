@@ -22,7 +22,20 @@ exports.createTeam = async (req, res, next) => {
     const team = await teamsService.createTeam(teamData);
     return successResponse(res, 'Team created successfully', team);
   } catch (error) {
-    next(error);
+    console.error('Create Team Error:', error)
+
+    const map = {
+      TEAM_REQUIRED_FIELDS_MISSING: 'Team name is required',
+      AGENCY_NOT_FOUND: 'Agency not found',
+      DEPARTMENT_NOT_FOUND: 'Invalid department selected',
+      TEAM_LEAD_NOT_FOUND: 'Invalid team lead',
+      TEAM_CODE_ALREADY_EXISTS: 'Team code already exists',
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: map[error.message] || 'Failed to create team',
+    })
   }
 };
 
