@@ -20,6 +20,6 @@ router.get('/managers/:agencyId',authMiddleware, usersController.getManagersByAg
 
 router.get('/users/without-team', authMiddleware, usersController.getUsersWithoutTeam)
 router.get("/:id", usersController.getUserByIdController);
-
+router.put('/users/:id', authMiddleware, usersController.updateUser)
 
 module.exports = router

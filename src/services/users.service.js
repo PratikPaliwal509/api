@@ -29,9 +29,27 @@ exports.getUserById = async (userId) => {
     where: { user_id: userId },
     select: {
       agency_id: true, user_id: true,
+      first_name: true,
+      last_name: true,
       full_name: true,
       email: true,
       role_id: true,
+      created_at: true,
+      updated_at: true,
+      is_active: true,
+      phone: true,
+      mobile: true,
+      avatar_url: true,
+      bio: true,
+      job_title: true,
+      date_of_joining: true,
+      timezone: true,
+      agency: {
+        select: {
+          agency_id: true,
+          agency_name: true,
+        },
+      },
       role: {
         select: {
           role_id: true,
@@ -42,6 +60,12 @@ exports.getUserById = async (userId) => {
         select: {
           department_id: true,
           department_name: true,
+        },
+      },
+      team: {
+        select: {
+          team_id: true,  
+          team_name: true,
         },
       },
     },
@@ -210,11 +234,11 @@ exports.createUser = async (data) => {
   const hashedPassword = await bcrypt.hash(password, 10)
   const employee_id = await generateEmployeeId()
   const parsedDateOfJoining =
-  date_of_joining ? new Date(date_of_joining) : null
+    date_of_joining ? new Date(date_of_joining) : null
   const parsedHourlyRate =
-  hourly_rate !== undefined && hourly_rate !== ''
-    ? Number(hourly_rate)
-    : null
+    hourly_rate !== undefined && hourly_rate !== ''
+      ? Number(hourly_rate)
+      : null
 
   // create user
   const user = await prisma.user.create({
@@ -225,8 +249,8 @@ exports.createUser = async (data) => {
       password_hash: hashedPassword,
       employee_id: employee_id,
       bio,
-      date_of_joining:parsedDateOfJoining,
-      hourly_rate:parsedHourlyRate,
+      date_of_joining: parsedDateOfJoining,
+      hourly_rate: parsedHourlyRate,
       job_title,
       // role_id,
       // agency_id,
@@ -242,8 +266,8 @@ exports.createUser = async (data) => {
         },
       },
       creator: {
-      connect: { user_id: created_by },
-    },
+        connect: { user_id: created_by },
+      },
     },
     select: {
       user_id: true,
@@ -279,14 +303,14 @@ exports.updateProfile = async (userId, data) => {
   const updateData = {};
 
   for (const field of allowedFields) {
-     if (data[field] === "") {
-  delete data[field];
-}
+    if (data[field] === "") {
+      delete data[field];
+    }
     if (data[field] !== undefined) {
       updateData[field] = data[field];
       console.log(`Updating field: ${field} with value: ${data[field]}`);
     }
-   
+
 
   }
 
@@ -332,3 +356,70 @@ exports.updateProfile = async (userId, data) => {
 };
 
 
+/**
+ * UPDATE USER SERVICE
+ */
+exports.updateUser = async (userId, data) => {
+  // ✅ Allowed editable fields ONLY
+  const allowedFields = [
+    'first_name',
+    'last_name',
+    'email',
+    'phone',
+    'mobile',
+    'job_title',
+    'bio',
+    'department_id',
+    'team_id',
+    'is_active',
+    'avatar_url',
+  ]
+
+  const updateData = {}
+
+  // ✅ Prevent empty string overwrite
+  for (const field of allowedFields) {
+    if (data[field] !== undefined && data[field] !== '') {
+      updateData[field] = data[field]
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    const err = new Error('No valid fields provided for update')
+    err.statusCode = 400
+    throw err
+  }
+
+  // ✅ Ensure user exists
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+  })
+
+  if (!user) {
+    const err = new Error('User not found')
+    err.statusCode = 404
+    throw err
+  }
+
+  // ✅ Update user
+  return prisma.user.update({
+    where: { user_id: userId },
+    data: updateData,
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      full_name: true,
+      email: true,
+      phone: true,
+      mobile: true,
+      job_title: true,
+      bio: true,
+      avatar_url: true,
+      department_id: true,
+      team_id: true,
+      is_active: true,
+      updated_at: true,
+    },
+  })
+}

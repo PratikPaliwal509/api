@@ -288,3 +288,25 @@ exports.updateProfile = async (req, res, next) => {
 };
 
 
+exports.updateUser = async (req, res, next) => {
+  try {
+    const userId = Number(req.params.id)
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user id',
+      })
+    }
+
+    const updatedUser = await usersService.updateUser(userId, req.body)
+
+    return res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: updatedUser,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
