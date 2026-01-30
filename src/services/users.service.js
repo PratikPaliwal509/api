@@ -220,7 +220,6 @@ exports.createUser = async (data) => {
     job_title
   } = data.formData;
   const created_by = data.created_by;
-  console.log('Creating user with data:', data);
   // check if user already exists
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -284,7 +283,6 @@ exports.createUser = async (data) => {
 }
 
 exports.updateProfile = async (userId, data) => {
-  console.log('Updating user:', userId, 'with data:', data);
 
   const allowedFields = [
     'first_name',
@@ -308,7 +306,6 @@ exports.updateProfile = async (userId, data) => {
     }
     if (data[field] !== undefined) {
       updateData[field] = data[field];
-      console.log(`Updating field: ${field} with value: ${data[field]}`);
     }
 
 

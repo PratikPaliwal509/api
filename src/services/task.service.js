@@ -17,7 +17,6 @@ const createTask = async (data, userId) => {
   }
 
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
-  console.log(JSON.stringify(data))
   const task = await prisma.task.create({
     data: {
       project_id: data.project_id,
@@ -65,7 +64,6 @@ const createTask = async (data, userId) => {
  */
 const getTasks = async (user) => {
   const where = {};
-  console.log(user)
   const scope = user?.role?.permissions?.tasks?.view;
   if (!scope) return [];
 
@@ -110,7 +108,6 @@ const getTasks = async (user) => {
 
 
     case 'assigned':
-      console.log("assigned")
       where.assignments = {
         some: {
           user_id: user.user_id,
@@ -196,7 +193,6 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
   if (!Array.isArray(userIds) || userIds.length === 0) {
     throw new Error('user_ids must be a non-empty array');
   }
-  console.log('Assigning users', userIds, 'to task', taskId, 'by', assignedBy);
   const ids = userIds
     .map((id) => Number(id))
     .filter((n) => Number.isInteger(n) && n > 0);
@@ -228,7 +224,6 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
     data: assignments,
     skipDuplicates: true,
   });
-  console.log('Assignments created', foundIds);
 
   const currentAssigned = task.assigned_to || []
 
@@ -325,12 +320,6 @@ const removeTaskAssignment = async ({
   removed_by,
   user_role,
 }) => {
-  console.log(
-    'task_id:', task_id,
-    'user_id:', user_id,
-    'removed_by:', removed_by,
-    'user_role:', user_role
-  )
 
   const assignment = await prisma.taskAssignment.findFirst({
     where: {

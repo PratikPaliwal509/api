@@ -75,7 +75,6 @@ const createNotification = async (data) => {
           subject: data.title,
           html: `<p>Hi ${user.first_name},</p><p>${data.message}</p>`
         });
-        console.log('Email sent to user:', user.email);
       } catch (err) {
         console.error('Failed to send email to user:', user.email, err);
       }

@@ -139,7 +139,6 @@ exports.createProject = async (data, userId, agencyId) => {
     },
   })
 
-  console.log("Created project: " + JSON.stringify(project))
   await NotificationService.createNotification({
     user_id: project.project_manager_id, // who receives it
     notification_type: 'PROJECT_CREATED',
@@ -158,9 +157,6 @@ exports.createProject = async (data, userId, agencyId) => {
 
 /* ---------------- GET PROJECTS ---------------- */
 exports.getProjectsByScope = async (user) => {
-  console.log(user)
-  console.log(user?.role?.permissions?.clients?.view)
-  console.log(user?.agency?.agency_id)
   const scope = user?.role?.permissions?.projects?.view;
   if (!scope) return [];
 
@@ -173,7 +169,6 @@ exports.getProjectsByScope = async (user) => {
     case 'all': break;
 
     case 'agency':
-      console.log("agencycase")
       where.agency_id = user.agency.agency_id;
       where.is_active = true;
       // agency filter already applied
@@ -265,7 +260,6 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   });
 
   if (!project) throwError('NOT_FOUND', 'Project not found');
-  console.log({ project, agencyId, userId })
   // Access rules: allow if same agency, or the requesting user is project manager,
   // the creator, or is a project member.
   const isSameAgency = project.agency_id === agencyId;
@@ -273,7 +267,6 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   const isCreator = project.created_by === userId;
   const memberIds = (project.projectMembers || []).map((m) => m.user_id);
   const isMember = memberIds.includes(userId);
-  console.log({ isSameAgency, isManager, isCreator, isMember })
   if (!isSameAgency && !isManager && !isCreator && !isMember) {
     throwError('FORBIDDEN', 'You do not have access to this project');
   }
@@ -353,7 +346,6 @@ exports.updateProject = async (projectId, data, userId) => {
     data: updateData
   });
 
-  console.log("Updated project: " + JSON.stringify(updatedProject))
   // =========================
   // 🔔 PROJECT UPDATED NOTIFICATION
   // =========================
@@ -441,7 +433,6 @@ exports.addProjectMember = async (
   agencyId,
   projectAssignPermission
 ) => {
-  console.log('Adding member', userId, 'to project', projectId, 'by', addedBy, projectAssignPermission);
   if (!isValidNumber(userId)) {
     throwError('VALIDATION_ERROR', 'Invalid user_id', 'user_id');
   }

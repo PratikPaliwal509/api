@@ -114,8 +114,6 @@ exports.createTeam = async (data) => {
 exports.getTeams = async (user) => {
   const { team_visibility } = user // all | agency | department | own | team | assigned | none
   const where = {}
-  console.log(user)
-  // console.log(filters)
   // optional filters
   // if (filters.agency_id) where.agency_id = Number(filters.agency_id)
   // if (filters.department_id) where.department_id = Number(filters.department_id)
@@ -136,7 +134,6 @@ exports.getTeams = async (user) => {
       break
 
     case 'department':
-      console.log("deeeeeeeeeeeepartment")
       where.department_id = user.department.department_id
       break
 
@@ -145,7 +142,6 @@ exports.getTeams = async (user) => {
       break
 
     case 'team':
-      console.log("teams" + user.user_id)
       // where.users = {
       //   // some: { user_id: user.user_id },
       // }
@@ -154,7 +150,6 @@ exports.getTeams = async (user) => {
 
 
     case 'assigned':
-        console.log("assign")
       where.users = {
         some: {
           project_members: {

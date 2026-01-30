@@ -6,7 +6,6 @@ exports.createDepartment = async (req, res, next) => {
   try {
 
     const userId = req.user.user_id
-    console.log(userId)
     // ✅ 2. Fetch user to get agency_id
     const user = await usersService.getUserById(userId)
 
@@ -22,8 +21,6 @@ exports.createDepartment = async (req, res, next) => {
     const department = await departmentsService.createDepartment(departmentData);
     return successResponse(res, 'Department created successfully', department);
   } catch (error) {
-  console.log('Create Department Error:', error)
-
   return res.status(400).json({
     success: false,
     message:

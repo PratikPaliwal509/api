@@ -214,9 +214,6 @@ exports.getUserByToken = async (req, res) => {
 
 exports.getUserByToken = async (req, res) => {
   try {
-    // token decoded in middleware
-    console.log('Decoded User in Controller:', req.user)
-    console.log('Decoded User in Controller:', req.body)
     const userId = req.user.user_id
 
     const user = await usersService.getUserByTokenService(userId)
@@ -238,14 +235,12 @@ exports.getUserByToken = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    console.log('Create User Req Body:', req.user.user_id  )
   const createdBy = req.user.user_id  
   const payload = {
       ...req.body,
       created_by: createdBy,
       
     };
-console.log("Payload in Controller:", payload)
     const user = await usersService.createUser(payload)
     return res.status(201).json({
       success: true,
@@ -268,8 +263,6 @@ console.log("Payload in Controller:", payload)
 exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-
-    console.log('Update Profile Req Body:', req.body);
 
     const updatedUser = await usersService.updateProfile(
       userId,

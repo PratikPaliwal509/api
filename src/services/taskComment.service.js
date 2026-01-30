@@ -109,7 +109,6 @@ const getCommentsByTask = async (taskId) => {
 };
 
 const deleteComment = async (commentId, userId) => {
-  console.log(`Deleting comment ID ${commentId} by user ID ${userId}`);
   // 1️⃣ Fetch the comment first
   const comment = await prisma.taskComment.findUnique({
     where: { comment_id: commentId },
@@ -162,7 +161,6 @@ const deleteComment = async (commentId, userId) => {
     notifyUserIds.delete(userId);
 
     // 4️⃣ Send notifications in parallel
-    console.log('Notifying users about deleted comment:', notifyUserIds);
     await Promise.all([...notifyUserIds].map((notifyUserId) =>
       NotificationService.createNotification({
         user_id: notifyUserId,
@@ -286,7 +284,6 @@ const getCommentReplies = async (commentId) => {
 };
 
 const deleteReply = async (replyId, userId) => {
-  console.log(`Deleting reply ID ${replyId} by user ID ${userId}`);
   // 1️⃣ Fetch the reply first
   const reply = await prisma.taskComment.findUnique({
     where: { comment_id: replyId },
@@ -323,7 +320,6 @@ const deleteReply = async (replyId, userId) => {
       assigned_to: true
     }
   });
-  console.log('Task fetched for reply deletion:', task);
   if (task) {
     const notifyUserIds = new Set();
 
@@ -429,7 +425,6 @@ const updateComment = async (comment_id, user_id, comment_text) => {
     ))
   }
 
-  console.log('Updated Comment:', updatedComment)
   return updatedComment
 }
 

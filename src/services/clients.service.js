@@ -37,9 +37,6 @@ exports.createClient = async (data) => {
 
 // services/clients.service.js
 exports.getClientsByScope = async (user) => {
-  console.log(user)
-  console.log(user?.role?.permissions?.clients?.view)
-  console.log(user?.agency?.agency_id)
   const scope = user?.role?.permissions?.clients?.view;
 
   if (!scope) {
@@ -147,16 +144,13 @@ exports.getAllClients = async (agency_id) => {
 // UPDATE CLIENT
 exports.updateClient = async (id, data) => {
   await exports.getClientById(id);
-
-   if (data.portal_user_id === '' || data.portal_user_id === undefined) {
-    data.portal_user_id = null;
-  } else {
-    data.portal_user_id = Number(data.portal_user_id);
-  }
-
   return prisma.client.update({
     where: { client_id: Number(id) },
-    data
+    data:{
+      ...data,
+      account_manager_id: data.account_manager_id !== undefined ? Number(data.account_manager_id) : null,
+      portal_user_id: data.portal_user_id !== undefined ? Number(data.portal_user_id) : null,
+    }
   });
 };
 
@@ -210,7 +204,6 @@ exports.deleteClient = async (clientId, userId) => {
 }
 
 exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
-console.log('Fetching client notes for user:', user_id, 'with role:', role.role_name, 'in agency:', agency.agency_id)
   const where = {
     notes: { not: null }
   }
@@ -227,7 +220,6 @@ console.log('Fetching client notes for user:', user_id, 'with role:', role.role_
 
   // 🔥 USER / QA / DEVELOPER → OWN NOTES
   else {
-    console.log('Applying filter for own notes only')
     where.agency_id = agency.agency_id
     where.created_by = user_id
   }

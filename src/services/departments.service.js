@@ -67,9 +67,6 @@ console.log(error)
 
 exports.getAllDepartments = async (user) => {
   const where = {}
-  console.log(user)
-  console.log(user?.role?.permissions?.departments?.view)
-  console.log(user?.agency?.agency_id)
 const scope = user?.role?.permissions?.departments?.view;
 
   if (!scope) {
@@ -86,7 +83,6 @@ const scope = user?.role?.permissions?.departments?.view;
       break
 
     case 'department':
-      console.log("department", user.department.department_id)
       where.department_id = user.department.department_id
       break
 
@@ -185,7 +181,6 @@ exports.getDepartmentById = async (id) => {
   if (!department) {
     throw new Error('DEPARTMENT_NOT_FOUND');
   }
-console.log(JSON.stringify(department))
   return department;
 };
 

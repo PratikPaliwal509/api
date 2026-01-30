@@ -32,7 +32,6 @@ exports.getProjects = async (req, res, next) => {
 
 // ---------------- PROJECT DETAILS ----------------
 exports.getProjectById = async (req, res, next) => {
-  console.log('Getting project by ID:', req.params.id, 'for user:', req.user);
   try {
     const project = await projectService.getProjectById(
       Number(req.params.id),
@@ -153,14 +152,11 @@ exports.getProjectUsers = async (req, res) => {
     const projectId = Number(req.params.project_id);
     const loggedInUserId = req.user.user_id;
     const permissions = req.user?.role?.permissions;
-console.log('Fetching users for project:', req.params, 'by user:', req.user);
     if (!projectId) {
       return res.status(400).json({ message: "Invalid project id" });
     }
-console.log('User permissions:', permissions);
     /* ---------- Permission Check ---------- */
     const projectViewPermission = permissions?.projects?.view;
-console.log('Project view permission:', projectViewPermission);
     if (!projectViewPermission) {
       return res.status(403).json({
         message: "You do not have permission to view projects",
@@ -210,7 +206,6 @@ console.log('Project view permission:', projectViewPermission);
 
 exports.getProjectNotes = async (req, res) => {
   try {
-    console.log(req.user)
     const notes = await projectService.fetchProjectNotesService(req.user)
     res.status(200).json(notes)
   } catch (error) {
