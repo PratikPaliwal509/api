@@ -17,6 +17,8 @@ router.post('/', logActivity({
 
 router.get('/', taskController.getTasks);
 
+// Update: Get tasks overview
+router.get('/overview', authMiddleware, taskController.getTasksOverview);
 router.get('/:id', taskController.getTaskById);
 
 //UPDATE TASK
@@ -54,12 +56,12 @@ router.post('/:taskId/subtasks', logActivity({
     getEntityName: (req, res, response) => response?.data?.task_title,
     getChanges: (req, res, response) => response?.data
   }), taskController.createSubtask, );
-
 // Get subtasks of a task
 router.get('/:taskId/subtasks', taskController.getSubtasks);
 
 router.post('/:taskId/checklist', taskController.addTaskChecklist)
 
 router.patch('/:taskId/assignments/:userId/remove', authMiddleware, taskController.removeAssignment, )
+
 
 module.exports = router;

@@ -75,14 +75,25 @@ const getTasks = async (user) => {
       // No restriction
       break;
 
-    case 'team':
+    case 'team': {
+      console.log('User Team:', user);
+
+      const teamId = user?.team?.team_id;
+
+      if (!teamId) {
+        throw new Error('User is not assigned to any team');
+        // or use a custom error class / HTTP error
+      }
+
       where.assignments = {
         some: {
-          user: { team_id: user.team.team_id },
+          user: { team_id: teamId },
           is_active: true,
         },
       };
       break;
+    }
+
 
 
     //Selection method of department
@@ -277,7 +288,6 @@ const changeStatus = async (taskId, status) => {
   });
 };
 
-
 /**
  * Get Subtasks
  */
@@ -384,6 +394,134 @@ const removeTaskAssignment = async ({
   }
 }
 
+
+
+const getLast7Days = () => {
+  return [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+};
+
+/* ---------- Service ---------- */
+
+const getTasksOverview = async () => {
+  const days = getLast7Days();
+
+  /* ---------- TOTAL COUNTS (for cards) ---------- */
+
+  const [
+    totalTasks,
+    totalCompletedTasks,
+    totalProjects,
+    totalCompletedProjects,
+  ] = await Promise.all([
+    prisma.task.count(),
+    prisma.task.count({
+      where: { status: 'completed' },
+    }),
+    prisma.project.count(),
+    prisma.project.count({
+      where: { status: 'finished' },
+    }),
+  ]);
+
+  /* ---------- DAILY COUNTS (for charts) ---------- */
+
+  const completedTasksPerDay = await Promise.all(
+    days.map(async (day) => {
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1);
+
+      return prisma.task.count({
+        where: {
+          status: 'completed',
+          completed_at: {
+            gte: day,
+            lt: nextDay,
+          },
+        },
+      });
+    })
+  );
+
+  const newTasksPerDay = await Promise.all(
+    days.map(async (day) => {
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1);
+
+      return prisma.task.count({
+        where: {
+          created_at: {
+            gte: day,
+            lt: nextDay,
+          },
+        },
+      });
+    })
+  );
+
+  const completedProjectsPerDay = await Promise.all(
+    days.map(async (day) => {
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1);
+
+      return prisma.project.count({
+        where: {
+          status: 'finished',
+          updated_at: {
+            gte: day,
+            lt: nextDay,
+          },
+        },
+      });
+    })
+  );
+console.log("completedProjectsPerDay",completedProjectsPerDay)
+  /* ---------- RESPONSE ---------- */
+
+  return [
+    {
+      title: 'Tasks Completed',
+      total_number: totalTasks,
+      completed_number: totalCompletedTasks,
+      progress: totalTasks
+        ? Math.round((totalCompletedTasks / totalTasks) * 100)
+        : 0,
+      chartColor: '#3454d1',
+      color: 'primary',
+      chartData: completedTasksPerDay,
+    },
+    {
+      title: 'New Tasks',
+      total_number: totalTasks,
+      completed_number: newTasksPerDay.reduce((a, b) => a + b, 0),
+      progress: totalTasks
+        ? Math.round(
+            (newTasksPerDay.reduce((a, b) => a + b, 0) / totalTasks) * 100
+          )
+        : 0,
+      chartColor: '#25b865',
+      color: 'success',
+      chartData: newTasksPerDay,
+    },
+    {
+      title: 'Project Done',
+      total_number: totalProjects,
+      completed_number: totalCompletedProjects,
+      progress: totalProjects
+        ? Math.round(
+            (totalCompletedProjects / totalProjects) * 100
+          )
+        : 0,
+      chartColor: '#d13b4c',
+      color: 'danger',
+      chartData: completedProjectsPerDay,
+    },
+  ];
+};
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -393,5 +531,6 @@ module.exports = {
   assignUsers,
   changeStatus,
   getSubtasksByTaskId,
-  addChecklistToTask
+  addChecklistToTask,
+  getTasksOverview
 };

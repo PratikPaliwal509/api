@@ -180,6 +180,21 @@ const removeAssignment = async (req, res) => {
     })
   }
 }
+
+const getTasksOverview = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id; // from auth middleware
+
+    const overview = await taskService.getTasksOverview(userId);
+
+    res.status(200).json({
+      success: true,
+      data: overview,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   createTask,
   removeAssignment,
@@ -190,5 +205,6 @@ module.exports = {
   changeStatus,
   createSubtask,
   getSubtasks,
-  addTaskChecklist
+  addTaskChecklist,
+  getTasksOverview
 };
