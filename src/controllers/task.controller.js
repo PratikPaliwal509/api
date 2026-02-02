@@ -198,7 +198,6 @@ const getTasksOverview = async (req, res, next) => {
 // controllers/task.controller.js
 const getProjectTasks = async (req, res) => {
   try {
-    console.log("i am here", req.params)
     // const { projectId } = req.params
 const projectId = req.params.id
     if (!projectId) {
