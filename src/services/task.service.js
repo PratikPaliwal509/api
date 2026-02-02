@@ -522,6 +522,62 @@ console.log("completedProjectsPerDay",completedProjectsPerDay)
     },
   ];
 };
+
+// services/task.service.js
+const getProjectTasks = async (projectId) => {
+  try {
+    const tasks = await prisma.task.findMany({
+      where: {
+        project_id: Number(projectId),
+      },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_number: true,
+        description: true,
+        task_type: true,
+        priority: true,
+        status: true,
+        progress_percentage: true,
+        start_date: true,
+        due_date: true,
+        completed_at: true,
+        estimated_hours: true,
+        actual_hours: true,
+        is_billable: true,
+        is_milestone: true,
+        is_recurring: true,
+        parent_task_id: true,
+        depends_on: true,
+        blocks: true,
+        assigned_to: true,
+        project_id: true,
+        created_by: true,
+        created_at: true,
+        updated_at: true,
+      },
+      orderBy: [
+        { parent_task_id: 'asc' },
+        { start_date: 'asc' },
+      ],
+    })
+
+    // ⛑️ HARDEN DATES (NO SHAPE CHANGE)
+    return tasks.map((task) => ({
+      ...task,
+      start_date: task.start_date ?? task.created_at,
+      due_date:
+        task.due_date ??
+        task.start_date ??
+        task.created_at,
+    }))
+  } catch (error) {
+    console.error('Error fetching project tasks:', error)
+    throw new Error('Failed to fetch project tasks')
+  }
+}
+
+
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -532,5 +588,6 @@ module.exports = {
   changeStatus,
   getSubtasksByTaskId,
   addChecklistToTask,
-  getTasksOverview
+  getTasksOverview,
+  getProjectTasks
 };

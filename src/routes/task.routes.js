@@ -20,6 +20,7 @@ router.get('/', taskController.getTasks);
 // Update: Get tasks overview
 router.get('/overview', authMiddleware, taskController.getTasksOverview);
 router.get('/:id', taskController.getTaskById);
+router.get('/project/:id', taskController.getProjectTasks);
 
 //UPDATE TASK
 router.put('/:id', logActivity({

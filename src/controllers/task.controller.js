@@ -159,7 +159,6 @@ const addTaskChecklist = async (req, res) => {
 const removeAssignment = async (req, res) => {
   try {
     const { taskId, userId } = req.params
-
     const result = await taskService.removeTaskAssignment({
       task_id: Number(taskId),
       user_id: Number(userId),
@@ -195,6 +194,36 @@ const getTasksOverview = async (req, res, next) => {
     next(error);
   }
 };
+
+// controllers/task.controller.js
+const getProjectTasks = async (req, res) => {
+  try {
+    console.log("i am here", req.params)
+    // const { projectId } = req.params
+const projectId = req.params.id
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID is required',
+      })
+    }
+
+    const tasks = await taskService.getProjectTasks(projectId)
+
+    return res.status(200).json({
+      success: true,
+      data: tasks,
+      count: tasks.length,
+    })
+  } catch (error) {
+    console.error('Error in getProjectTasks controller:', error)
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch project tasks',
+    })
+  }
+}
+
 module.exports = {
   createTask,
   removeAssignment,
@@ -206,5 +235,6 @@ module.exports = {
   createSubtask,
   getSubtasks,
   addTaskChecklist,
-  getTasksOverview
+  getTasksOverview,
+  getProjectTasks
 };
