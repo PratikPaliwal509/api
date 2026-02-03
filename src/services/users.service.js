@@ -217,7 +217,9 @@ exports.createUser = async (data) => {
     bio,
     date_of_joining,
     hourly_rate,
-    job_title
+    job_title,
+    department_id,
+    team_id
   } = data.formData;
   const created_by = data.created_by;
   // check if user already exists
@@ -244,6 +246,7 @@ exports.createUser = async (data) => {
     data: {
       first_name,
       last_name,
+      full_name : `${first_name} ${last_name}`,
       email,
       password_hash: hashedPassword,
       employee_id: employee_id,
@@ -251,9 +254,11 @@ exports.createUser = async (data) => {
       date_of_joining: parsedDateOfJoining,
       hourly_rate: parsedHourlyRate,
       job_title,
+
       // role_id,
       // agency_id,
       is_active: true,
+      
       agency: {
         connect: {
           agency_id: Number(agency_id), // 👈 REQUIRED
@@ -267,6 +272,14 @@ exports.createUser = async (data) => {
       creator: {
         connect: { user_id: created_by },
       },
+      department: {
+        connect:{department_id: Number(department_id)}
+      },
+      team:{
+        connect:{
+          team_id: Number(team_id)
+        }
+      }
     },
     select: {
       user_id: true,
