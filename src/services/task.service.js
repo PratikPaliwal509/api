@@ -36,6 +36,14 @@ const createTask = async (data, userId) => {
       tags: data.labels || [],
       depends_on: data.depends_on || [],
       blocks: data.blocks || [],
+      // ✅ CLIENT FIELDS
+      visible_to_client: Boolean(data.visible_to_client),
+      client_approval_required: Boolean(data.client_approval_required),
+
+      // approval defaults
+      client_approved: data.client_approval_required ? false : true,
+      client_approved_at: null,
+      client_approved_by: null,
     }
   });
 
@@ -56,6 +64,39 @@ const createTask = async (data, userId) => {
     send_to_admin: true,
     admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
   })
+  console.log("task.visible_to_client && task.client_approval_required", task.visible_to_client, task.client_approval_required)
+  if (task.visible_to_client && task.client_approval_required) {
+    // 🔎 Fetch client users of this project
+    const project = await prisma.project.findUnique({
+      where: {
+        project_id: task.project_id,
+      },
+      select: {
+        project_name: true,
+        client: {
+          select: {
+            client_id: true,
+            portal_user_id: true,
+            company_name: true
+          }
+        }
+      }
+    })
+    const portalUserId = project?.client?.portal_user_id;
+    console.log("portaluserid", portalUserId)
+    if (portalUserId) {
+      await NotificationService.createNotification({
+        user_id: portalUserId,
+        notification_type: 'TASK_APPROVAL_REQUIRED',
+        title: 'Task Approval Required',
+        message: `A task "${task.task_title}" requires your approval in project "${project.project_name}".`,
+        entity_type: 'TASK',
+        entity_id: task.task_id,
+        action_url: `/client/projects/${task.project_id}/tasks/${task.task_id}`,
+        sent_via_email: true
+      });
+    }
+  }
   return task;
 };
 
@@ -93,6 +134,21 @@ const getTasks = async (user) => {
     }
 
 
+    case 'client': {
+      // Logged-in user is a client portal user
+      // user.user_id === Client.portal_user_id
+
+      where.project = {
+        client: {
+          portal_user_id: user.user_id,
+        },
+      }
+
+      // Client should only see visible tasks
+      where.visible_to_client = true
+
+      break
+    }
 
     //Selection method of department
     //       Task.task_id = 9001
@@ -497,8 +553,8 @@ const getTasksOverview = async () => {
       completed_number: newTasksPerDay.reduce((a, b) => a + b, 0),
       progress: totalTasks
         ? Math.round(
-            (newTasksPerDay.reduce((a, b) => a + b, 0) / totalTasks) * 100
-          )
+          (newTasksPerDay.reduce((a, b) => a + b, 0) / totalTasks) * 100
+        )
         : 0,
       chartColor: '#25b865',
       color: 'success',
@@ -510,8 +566,8 @@ const getTasksOverview = async () => {
       completed_number: totalCompletedProjects,
       progress: totalProjects
         ? Math.round(
-            (totalCompletedProjects / totalProjects) * 100
-          )
+          (totalCompletedProjects / totalProjects) * 100
+        )
         : 0,
       chartColor: '#d13b4c',
       color: 'danger',
@@ -575,6 +631,67 @@ const getProjectTasks = async (projectId) => {
 }
 
 
+const approveTaskByClient = async (taskId, userId) => {
+  // 1. Fetch task with project + client
+  const task = await prisma.task.findUnique({
+    where: { task_id: Number(taskId) },
+    include: {
+      project: {
+        include: {
+          client: true,
+        },
+      },
+    },
+  })
+
+  if (!task) {
+    throw new Error('Task not found')
+  }
+
+  // 2. Validate client ownership
+  const client = task.project?.client
+  if (!client || client.portal_user_id !== userId) {
+    throw new Error('You are not authorized to approve this task')
+  }
+
+  // 3. Validate approval rules
+  if (!task.client_approval_required) {
+    throw new Error('This task does not require client approval')
+  }
+
+  if (task.client_approved) {
+    throw new Error('Task is already approved')
+  }
+
+  // 4. Approve task
+  const approvedTask = await prisma.task.update({
+    where: { task_id: task.task_id },
+    data: {
+      client_approved: true,
+      client_approved_at: new Date(),
+      client_approved_by: userId,
+      // status: 'completed', // optional: remove if not needed
+    },
+  })
+
+  // 5. Notify project manager
+  if (task.project.project_manager_id) {
+    await NotificationService.createNotification({
+      user_id: task.project.project_manager_id,
+      notification_type: 'TASK_CLIENT_APPROVED',
+      title: 'Task Approved by Client',
+      message: `Task "${task.task_title}" (${task.task_number}) has been approved by the client.`,
+      entity_type: 'TASK',
+      entity_id: task.task_id,
+      action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+      sent_via_email: true,
+    })
+  }
+
+  return approvedTask
+}
+
+
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -586,5 +703,6 @@ module.exports = {
   getSubtasksByTaskId,
   addChecklistToTask,
   getTasksOverview,
-  getProjectTasks
+  getProjectTasks,
+  approveTaskByClient
 };

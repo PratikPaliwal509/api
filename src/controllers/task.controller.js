@@ -222,6 +222,24 @@ const projectId = req.params.id
     })
   }
 }
+const approveTask = async (req, res) => {
+  try {
+    const { taskId } = req.params
+    const userId = req.user.user_id // from auth middleware
+
+    const task = await taskService.approveTaskByClient(taskId, userId)
+
+    return successResponse(
+      res,
+      'Task approved successfully',
+      task,
+      200
+    )
+  } catch (error) {
+    console.error('Task approval error:', error)
+    return errorResponse(res, error.message)
+  }
+}
 
 module.exports = {
   createTask,
@@ -235,5 +253,6 @@ module.exports = {
   getSubtasks,
   addTaskChecklist,
   getTasksOverview,
-  getProjectTasks
+  getProjectTasks,
+  approveTask
 };

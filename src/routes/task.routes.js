@@ -65,4 +65,11 @@ router.post('/:taskId/checklist', taskController.addTaskChecklist)
 router.patch('/:taskId/assignments/:userId/remove', authMiddleware, taskController.removeAssignment, )
 
 
+router.post(
+  '/:taskId/approve',
+  authMiddleware,
+  taskController.approveTask
+)
+
+
 module.exports = router;
