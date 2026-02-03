@@ -76,8 +76,6 @@ const getTasks = async (user) => {
       break;
 
     case 'team': {
-      console.log('User Team:', user);
-
       const teamId = user?.team?.team_id;
 
       if (!teamId) {
@@ -479,7 +477,6 @@ const getTasksOverview = async () => {
       });
     })
   );
-console.log("completedProjectsPerDay",completedProjectsPerDay)
   /* ---------- RESPONSE ---------- */
 
   return [
