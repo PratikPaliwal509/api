@@ -4,16 +4,19 @@ const { successResponse, errorResponse } = require('../utils/response');
 // 
 const getActiveTimer = async (req, res) => {
   try {
-    const { taskId } = req.params
+    console.log("gdgd",req.params.taskId )
+    console.log("gdgd",req.user.user_id )
+    const taskId = req.params.taskId
     const userId = req.user.user_id
 
     const log = await timeLogService.getActiveTimeLog({
       taskId,
       userId
     })
-
+console.log(log)
     res.status(200).json(log)
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: "Failed to fetch active timer" })
   }
 }
@@ -157,22 +160,50 @@ const deleteTimeLog = async (req, res) => {
   }
 };
 
-// PATCH /time-logs/:id/approve
+/**
+ * POST /api/time-logs/:id/approve
+ */
 const approveTimeLog = async (req, res) => {
   try {
-    const logId = Number(req.params.id);
+    const { id } = req.params
+    const approverId = req.user.user_id // from auth middleware
 
-    const log = await timeLogService.approveTimeLog(
-      logId,
-      req.user.user_id
-    );
+    const log = await timeLogService.approveTimeLog(id, approverId)
 
-    return successResponse(res, 'Time log approved', log);
-  } catch (err) {
-    return errorResponse(res, err.message);
+    res.status(200).json({
+      success: true,
+      message: 'Time log approved successfully',
+      data: log,
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    })
   }
-};
+}
 
+/**
+ * POST /api/time-logs/:id/reject
+ */
+const rejectTimeLog = async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const log = await timeLogService.rejectTimeLog(id)
+
+    res.status(200).json({
+      success: true,
+      message: 'Time log rejected successfully',
+      data: log,
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    })
+  }
+}
 module.exports = {
   getActiveTimer,
   startTimer,
@@ -182,5 +213,6 @@ module.exports = {
   getTaskTimeLogs,
   updateTimeLog,
   deleteTimeLog,
-  approveTimeLog
+  approveTimeLog,
+  rejectTimeLog
 };

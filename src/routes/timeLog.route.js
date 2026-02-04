@@ -35,6 +35,7 @@ router.post(
 // Time Log actions
 router.put('/time-logs/:id', timeLogController.updateTimeLog);
 router.delete('/time-logs/:id', timeLogController.deleteTimeLog);
-router.patch('/time-logs/:id/approve', timeLogController.approveTimeLog);
+router.post('/:id/approve', authMiddleware, timeLogController.approveTimeLog)
+router.post('/:id/reject', authMiddleware, timeLogController.rejectTimeLog)
 
 module.exports = router;

@@ -1,12 +1,13 @@
+
 const prisma = require('../config/db');
 
 // Added new code here
 const getActiveTimeLog = async ({ taskId, userId }) => {
+  console.log(taskId, userId)
   return prisma.timeLog.findFirst({
     where: {
       task_id: Number(taskId),
-      user_id: Number(userId),
-      end_time: null
+      // user_id: Number(userId), //Removed for: Admin Approval
     }
   })
 }
@@ -207,19 +208,58 @@ const deleteTimeLog = async (logId) => {
   });
 };
 
+
 /**
- * Approve Time Log
+ * Approve TimeLog
  */
-const approveTimeLog = async (logId, approvedBy) => {
+const approveTimeLog = async (logId, approverId) => {
+  const log = await prisma.timeLog.findUnique({
+    where: { log_id: Number(logId) },
+  })
+
+  if (!log) {
+    throw new Error('Time log not found')
+  }
+
+  if (log.is_approved) {
+    throw new Error('Time log already approved')
+  }
+
   return prisma.timeLog.update({
-    where: { log_id: logId },
+    where: { log_id: Number(logId) },
     data: {
       is_approved: true,
-      approved_by: approvedBy,
-      approved_at: new Date()
-    }
-  });
-};
+      approved_by: approverId,
+      approved_at: new Date(),
+    },
+  })
+}
+
+/**
+ * Reject TimeLog
+ */
+const rejectTimeLog = async (logId) => {
+  const log = await prisma.timeLog.findUnique({
+    where: { log_id: Number(logId) },
+  })
+
+  if (!log) {
+    throw new Error('Time log not found')
+  }
+
+  if (!log.is_approved) {
+    throw new Error('Time log is not approved yet')
+  }
+
+  return prisma.timeLog.update({
+    where: { log_id: Number(logId) },
+    data: {
+      is_approved: false,
+      approved_by: null,
+      approved_at: null,
+    },
+  })
+}
 
 module.exports = {
   getActiveTimeLog,
@@ -229,5 +269,6 @@ module.exports = {
   getTimeLogsByTask,
   updateTimeLog,
   deleteTimeLog,
-  approveTimeLog
+  approveTimeLog,
+  rejectTimeLog
 };
