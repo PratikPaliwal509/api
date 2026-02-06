@@ -532,7 +532,8 @@ const getTasksOverview = async () => {
     })
   );
   /* ---------- RESPONSE ---------- */
-
+const totalNewTasksLast7Days = newTasksPerDay.reduce((a, b) => a + b, 0);
+const totalCompletedLast7Days = completedTasksPerDay.reduce((a, b) => a + b, 0);
   return [
     {
       title: 'Tasks Completed',
@@ -547,11 +548,11 @@ const getTasksOverview = async () => {
     },
     {
       title: 'New Tasks',
-      total_number: totalTasks,
-      completed_number: newTasksPerDay.reduce((a, b) => a + b, 0),
-      progress: totalTasks
+      total_number: totalNewTasksLast7Days,
+      completed_number: totalCompletedLast7Days,
+      progress: totalNewTasksLast7Days
         ? Math.round(
-          (newTasksPerDay.reduce((a, b) => a + b, 0) / totalTasks) * 100
+          (totalCompletedLast7Days  / totalNewTasksLast7Days) * 100
         )
         : 0,
       chartColor: '#25b865',
