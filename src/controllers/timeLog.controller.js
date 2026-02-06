@@ -4,8 +4,6 @@ const { successResponse, errorResponse } = require('../utils/response');
 // 
 const getActiveTimer = async (req, res) => {
   try {
-    console.log("gdgd",req.params.taskId )
-    console.log("gdgd",req.user.user_id )
     const taskId = req.params.taskId
     const userId = req.user.user_id
 
@@ -13,7 +11,6 @@ const getActiveTimer = async (req, res) => {
       taskId,
       userId
     })
-console.log(log)
     res.status(200).json(log)
   } catch (error) {
     console.log(error)

@@ -116,7 +116,6 @@ exports.getClientsByScope = async (user) => {
 
 // CLIENT DETAILS
 exports.getClientById = async (id) => {
-  console.log("Hi")
   const client = await prisma.client.findUnique({
     where: { client_id: Number(id) },
      include: {

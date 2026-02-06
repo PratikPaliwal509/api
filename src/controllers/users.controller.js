@@ -306,7 +306,6 @@ exports.updateUser = async (req, res, next) => {
 
 exports.getClientPortalUsers = async (req, res) => {
   try {
-    console.log(req.user)
     const agencyId = req.user.agency?.agency_id;
 
     if (!agencyId) {

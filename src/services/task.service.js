@@ -64,7 +64,6 @@ const createTask = async (data, userId) => {
     send_to_admin: true,
     admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
   })
-  console.log("task.visible_to_client && task.client_approval_required", task.visible_to_client, task.client_approval_required)
   if (task.visible_to_client && task.client_approval_required) {
     // 🔎 Fetch client users of this project
     const project = await prisma.project.findUnique({
@@ -83,7 +82,6 @@ const createTask = async (data, userId) => {
       }
     })
     const portalUserId = project?.client?.portal_user_id;
-    console.log("portaluserid", portalUserId)
     if (portalUserId) {
       await NotificationService.createNotification({
         user_id: portalUserId,

@@ -118,7 +118,6 @@ exports.getTeamTimesheet = async (userId, agencyId) => {
    * ADMIN → ALL USERS
    * =========================
    */
-  console.log(role === 'super admin')
   if (role === 'super admin') {
     accessType = 'SUPER ADMIN';
 

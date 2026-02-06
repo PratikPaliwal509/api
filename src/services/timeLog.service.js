@@ -3,7 +3,6 @@ const prisma = require('../config/db');
 
 // Added new code here
 const getActiveTimeLog = async ({ taskId, userId }) => {
-  console.log(taskId, userId)
   return prisma.timeLog.findFirst({
     where: {
       task_id: Number(taskId),

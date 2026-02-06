@@ -3,7 +3,6 @@ const { successResponse, errorResponse } = require('../utils/response')
 
 exports.getTimesheetByUser = async (req, res, next) => {
   try {
-    console.log(req.user.user_id)
     const userId = req.user.user_id;
     const timesheet = await timesheetService.getTimesheetByUser(Number(userId))
     return successResponse(res, 'TIMESHEET_FETCHED', timesheet)
