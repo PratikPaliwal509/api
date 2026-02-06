@@ -15,6 +15,12 @@ router.get('/users/by-agency', authMiddleware, usersController.getUsersBySameAge
 router.get('/by-agency', authMiddleware, usersController.getAgencyUsers)
 router.get('/managers/:agencyId',authMiddleware, usersController.getManagersByAgency)
 
+// GET users for client (same agency, not already assigned)
+router.get(
+  '/client-portal-users',
+  authMiddleware,
+  usersController.getClientPortalUsers
+);
 router.get('/users/without-team', authMiddleware, usersController.getUsersWithoutTeam)
 router.get("/:id", usersController.getUserByIdController);
 router.put('/users/:id', authMiddleware, usersController.updateUser)

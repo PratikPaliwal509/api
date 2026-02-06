@@ -116,15 +116,86 @@ exports.getClientsByScope = async (user) => {
 
 // CLIENT DETAILS
 exports.getClientById = async (id) => {
+  console.log("Hi")
   const client = await prisma.client.findUnique({
-    where: { client_id: Number(id) }
+    where: { client_id: Number(id) },
+     include: {
+      projects: {
+        include: {
+          tasks: {
+            include: {
+              timeLogs: true
+            }
+          }
+        }
+      }
+    }
   });
 
   if (!client) {
     throw new Error('CLIENT_NOT_FOUND');
   }
 
-  return client;
+  // Helper: convert minutes to HH:MM
+  const toHHMM = (minutes = 0) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  // Compute project cost summary for each project
+  const projectCost = client.projects.map((project) => {
+    let totalActualMinutes = 0;
+    let totalBillableMinutes = 0;
+    let totalBilledMinutes = 0;
+    let totalUnbilledMinutes = 0;
+
+    let totalBillableAmount = 0;
+    let totalBilledAmount = 0;
+    let totalUnbilledAmount = 0;
+
+    project.tasks.forEach((task) => {
+      task.timeLogs.forEach((log) => {
+        const minutes = log.duration_minutes || 0;
+        const rate = Number(log.hourly_rate || 0);
+        const hours = minutes / 60;
+
+        // Actual hours includes all logs
+        totalActualMinutes += minutes;
+
+        if (log.is_billable) {
+          totalBillableMinutes += minutes;
+          totalBillableAmount += hours * rate;
+
+          if (log.is_invoiced) {
+            totalBilledMinutes += minutes;
+            totalBilledAmount += hours * rate;
+          } else {
+            totalUnbilledMinutes += minutes;
+            totalUnbilledAmount += hours * rate;
+          }
+        }
+      });
+    });
+
+    return {
+      project_id: project.project_id,
+      project_name: project.project_name,
+      currency: project.budget_currency || "USD",
+      actual_hours: toHHMM(totalActualMinutes),
+      billable_hours: toHHMM(totalBillableMinutes),
+      billed_hours: toHHMM(totalBilledMinutes),
+      unbilled_hours: toHHMM(totalUnbilledMinutes),
+      billable_amount: totalBillableAmount.toFixed(2),
+      billed_amount: totalBilledAmount.toFixed(2),
+      unbilled_amount: totalUnbilledAmount.toFixed(2)
+    };
+  });
+
+  return {
+    ...client,
+    projectCost
+  };
 };
 
 exports.getAllClients = async (agency_id) => {

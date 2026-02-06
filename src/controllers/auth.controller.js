@@ -30,16 +30,20 @@ const login = async (req, res, next) => {
 
     return successResponse(res, 'Login successful', result)
   } catch (error) {
-      let message = 'Something went wrong'
+    console.log(error)
+     
+  let statusCode = 500
+  let message = 'Internal Server Error'
 
-    if (error.message === 'INVALID_CREDENTIALS') {
-      message = 'Invalid Email or Password'
-    }
+  if (error.message === 'INVALID_CREDENTIALS') {
+    statusCode = 401
+    message = 'Invalid Email or Password'
+  }
 
-    res.status(401).json({
-      success: false,
-      message,
-    })
+  res.status(statusCode).json({
+    success: false,
+    message,
+  })
   }
 }
 

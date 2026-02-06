@@ -64,7 +64,7 @@ exports.getUserById = async (userId) => {
       },
       team: {
         select: {
-          team_id: true,  
+          team_id: true,
           team_name: true,
         },
       },
@@ -121,6 +121,7 @@ exports.getUsersByAgencyId = async (agencyId) => {
       user_id: true,
       first_name: true,
       last_name: true,
+      full_name: true,
       team_id: true,
       email: true,
       role: true,
@@ -246,7 +247,7 @@ exports.createUser = async (data) => {
     data: {
       first_name,
       last_name,
-      full_name : `${first_name} ${last_name}`,
+      full_name: `${first_name} ${last_name}`,
       email,
       password_hash: hashedPassword,
       employee_id: employee_id,
@@ -258,7 +259,7 @@ exports.createUser = async (data) => {
       // role_id,
       // agency_id,
       is_active: true,
-      
+
       agency: {
         connect: {
           agency_id: Number(agency_id), // 👈 REQUIRED
@@ -273,10 +274,10 @@ exports.createUser = async (data) => {
         connect: { user_id: created_by },
       },
       department: {
-        connect:{department_id: Number(department_id)}
+        connect: { department_id: Number(department_id) }
       },
-      team:{
-        connect:{
+      team: {
+        connect: {
           team_id: Number(team_id)
         }
       }
@@ -410,11 +411,12 @@ exports.updateUser = async (userId, data) => {
     err.statusCode = 404
     throw err
   }
-   // reset team if department changes
+  // reset team if department changes
   // ✅ Update user
   return prisma.user.update({
     where: { user_id: userId },
-    data: {...updateData,
+    data: {
+      ...updateData,
       department_id: updateData.department_id ? Number(updateData.department_id) : null,
       team_id: updateData.team_id ? Number(updateData.team_id) : null
     },
@@ -436,3 +438,39 @@ exports.updateUser = async (userId, data) => {
     },
   })
 }
+
+exports.getAvailablePortalUsersForClient = async (agencyId) => {
+  // 1. Get all portal_user_ids already used in Client table
+  const assignedUsers = await prisma.client.findMany({
+    where: {
+      portal_user_id: { not: null }
+    },
+    select: {
+      portal_user_id: true
+    }
+  });
+
+  const assignedUserIds = assignedUsers.map(
+    (c) => c.portal_user_id
+  );
+  // 2. Fetch users from same agency
+  const users = await prisma.user.findMany({
+    where: {
+      agency_id: agencyId,
+      user_id: {
+        notIn: assignedUserIds.length ? assignedUserIds : undefined
+      },
+      is_active: true // optional but recommended
+    },
+    select: {
+      user_id: true,
+      full_name: true,
+      email: true
+    },
+    orderBy: {
+      full_name: 'asc'
+    }
+  });
+
+  return users;
+};  

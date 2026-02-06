@@ -255,7 +255,12 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
             }
           }
         }
-      }
+      },
+       tasks: {
+        include: {
+          timeLogs: true, // include time logs per task
+        },
+      },
     }
   });
 
@@ -270,6 +275,57 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   if (!isSameAgency && !isManager && !isCreator && !isMember) {
     throwError('FORBIDDEN', 'You do not have access to this project');
   }
+
+  // ⏱️ TIME SUMMARY (SOURCE OF TRUTH)
+ 
+  // Helper to convert minutes to HH:MM
+  const toHHMM = (minutes = 0) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  // Flatten all time logs from all tasks
+  const allLogs = project.tasks.flatMap((task) => task.timeLogs);
+
+  let totalBillableMinutes = 0;
+  let totalBillableAmount = 0;
+  let totalBilledMinutes = 0;
+  let totalBilledAmount = 0;
+  let totalUnbilledMinutes = 0;
+  let totalUnbilledAmount = 0;
+  let totalActualMinutes = 0; // sum of all time logs, billable or not
+
+  allLogs.forEach((log) => {
+    const minutes = log.duration_minutes || 0;
+    const rate = Number(log.hourly_rate || 0);
+    totalActualMinutes += minutes;
+
+    if (log.is_billable) {
+      totalBillableMinutes += minutes;
+      totalBillableAmount += (minutes / 60) * rate;
+
+      if (log.is_invoiced) {
+        totalBilledMinutes += minutes;
+        totalBilledAmount += (minutes / 60) * rate;
+      } else {
+        totalUnbilledMinutes += minutes;
+        totalUnbilledAmount += (minutes / 60) * rate;
+      }
+    }
+  });
+
+  project.time_summary = {
+    currency: project.budget_currency || 'USD',
+    actual_hours: toHHMM(totalActualMinutes),
+    billable_hours: toHHMM(totalBillableMinutes),
+    billable_amount: totalBillableAmount.toFixed(2),
+    billed_hours: toHHMM(totalBilledMinutes),
+    billed_amount: totalBilledAmount.toFixed(2),
+    unbilled_hours: toHHMM(totalUnbilledMinutes),
+    unbilled_amount: totalUnbilledAmount.toFixed(2),
+  };
+
 
   return project;
 };
@@ -480,7 +536,7 @@ exports.addProjectMember = async (
     where: {
       project_id: projectId,
       user_id: userId,
-      is_active: true    
+      is_active: true
     }
   });
 

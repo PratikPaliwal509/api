@@ -303,3 +303,31 @@ exports.updateUser = async (req, res, next) => {
     next(error)
   }
 }
+
+exports.getClientPortalUsers = async (req, res) => {
+  try {
+    console.log(req.user)
+    const agencyId = req.user.agency?.agency_id;
+
+    if (!agencyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Agency not found for logged-in user'
+      });
+    }
+
+    const users = await usersService.getAvailablePortalUsersForClient(agencyId);
+
+    return res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error('Get Client Portal Users Error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch portal users'
+    });
+  }
+};

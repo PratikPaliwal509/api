@@ -35,6 +35,7 @@ app.use('/api/activityLogs', require('./routes/activityLog.route'));
 
 app.use('/api/users', userService);
 
+app.use('/api/timesheet', require('./routes/timesheet.route'))
 app.get("/", (req, res) => {
   res.send("API running");
 });
