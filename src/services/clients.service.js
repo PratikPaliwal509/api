@@ -30,7 +30,7 @@ exports.createClient = async (data) => {
   return prisma.client.create({
     data: {
       ...data,
-      client_since: new Date(), 
+      client_since: new Date(),
     },
   });
 };
@@ -118,7 +118,7 @@ exports.getClientsByScope = async (user) => {
 exports.getClientById = async (id) => {
   const client = await prisma.client.findUnique({
     where: { client_id: Number(id) },
-     include: {
+    include: {
       projects: {
         include: {
           tasks: {
@@ -190,9 +190,18 @@ exports.getClientById = async (id) => {
       unbilled_amount: totalUnbilledAmount.toFixed(2)
     };
   });
+// Flatten all tasks from projects
+const clientTasks = client.projects.flatMap(project =>
+  project.tasks.map(task => ({
+    ...task,
+    project_id: project.project_id,
+    project_name: project.project_name
+  }))
+)
 
   return {
     ...client,
+     tasks: clientTasks,
     projectCost
   };
 };
@@ -216,7 +225,7 @@ exports.updateClient = async (id, data) => {
   await exports.getClientById(id);
   return prisma.client.update({
     where: { client_id: Number(id) },
-    data:{
+    data: {
       ...data,
       account_manager_id: data.account_manager_id !== undefined ? Number(data.account_manager_id) : null,
       portal_user_id: data.portal_user_id !== undefined ? Number(data.portal_user_id) : null,

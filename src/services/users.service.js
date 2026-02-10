@@ -19,10 +19,33 @@ const generateEmployeeId = async () => {
 }
 // GET ALL USERS
 exports.getAllUsers = async () => {
-  return prisma.user.findMany({
+  return await prisma.user.findMany({
+    select: {
+      user_id: true,
+      first_name: true,
+      last_name: true,
+      full_name: true,
+      date_of_joining: true,
+      email: true,
+      is_active: true,
+      role: {
+        select: {
+          role_name: true,
+        },
+      },
 
+      department: {
+        select: {
+          department_name: true,
+        },
+      },
+    },
+    orderBy: {
+      full_name: 'asc',
+    },
   })
 }
+
 
 exports.getUserById = async (userId) => {
   return prisma.user.findUnique({

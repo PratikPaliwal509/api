@@ -66,46 +66,46 @@ exports.createTeam = async (data) => {
 
   // ✅ Use transaction to keep data consistent
   try {
-  const team = await prisma.$transaction(async (tx) => {
-    // 1️⃣ Create team
-    const createdTeam = await tx.team.create({
-      data: {
-        agency_id: Number(agency_id),
-        department_id: department_id ? Number(department_id) : null,
-        team_name,
-        team_code: teamCode,
-        description,
-        team_lead_id: team_lead_id ? Number(team_lead_id) : null,
-
-        // Connect to UserTeams
-        users: team_lead_id
-          ? {
-            connect: { user_id: Number(team_lead_id) }
-          }
-          : undefined
-      }
-    });
-
-    // 2️⃣ Set primary team (team_id) in User table
-    if (team_lead_id) {
-      await tx.user.update({
-        where: { user_id: Number(team_lead_id) },
+    const team = await prisma.$transaction(async (tx) => {
+      // 1️⃣ Create team
+      const createdTeam = await tx.team.create({
         data: {
-          team_id: createdTeam.team_id
+          agency_id: Number(agency_id),
+          department_id: department_id ? Number(department_id) : null,
+          team_name,
+          team_code: teamCode,
+          description,
+          team_lead_id: team_lead_id ? Number(team_lead_id) : null,
+
+          // Connect to UserTeams
+          users: team_lead_id
+            ? {
+              connect: { user_id: Number(team_lead_id) }
+            }
+            : undefined
         }
       });
-    }
 
-    return createdTeam;
-  });
+      // 2️⃣ Set primary team (team_id) in User table
+      if (team_lead_id) {
+        await tx.user.update({
+          where: { user_id: Number(team_lead_id) },
+          data: {
+            team_id: createdTeam.team_id
+          }
+        });
+      }
 
-  return team;
-} catch (error) {
+      return createdTeam;
+    });
+
+    return team;
+  } catch (error) {
     if (error.code === 'P2002') {
       throw new Error('TEAM_CODE_ALREADY_EXISTS')
     }
     throw error
-}
+  }
 };
 
 // services/teams.service.js
@@ -244,12 +244,55 @@ exports.getTeamById = async (id) => {
       email: true,
       role_id: true,
       department_id: true,
+      role: {
+        select: {
+          role_name: true,
+        },
+      },
     },
   });
-
+// 3️⃣ Projects linked to this team (via project_members → users)
+  const teamProjects = await prisma.project.findMany({
+    where: {
+      is_active: true,
+      projectMembers: {
+        some: {
+          is_active: true,
+          user: {
+            team_id: teamId,
+            is_active: true,
+          },
+        },
+      },
+    },
+    select: {
+      project_id: true,
+      project_name: true,
+      project_code: true,
+      status: true,
+      priority: true,
+      start_date: true,
+      end_date: true,
+      client: {
+        select: {
+          client_id: true,
+          company_name: true,
+        },
+      },
+      manager: {
+        select: {
+          user_id: true,
+          first_name: true,
+          last_name: true,
+        },
+      },
+    },
+    distinct: ['project_id'], // 🔥 IMPORTANT: avoid duplicates
+  })
   return {
     ...team,
     members: teamMembers,
+    projects: teamProjects,
   };
 };
 
@@ -271,10 +314,10 @@ exports.updateTeam = async (id, data) => {
     // 2️⃣ Update team
     const updatedTeam = await tx.team.update({
       where: { team_id: teamId },
-     data: {
-    ...data,
-    updated_at: new Date(), // 🔥 force update
-  },
+      data: {
+        ...data,
+        updated_at: new Date(), // 🔥 force update
+      },
     })
 
     // 3️⃣ If team lead changed

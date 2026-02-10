@@ -13,6 +13,7 @@ const createComment = async (req, res) => {
 
     return successResponse(res, 'Comment added successfully', comment, 201);
   } catch (err) {
+    console.log(err)
     return errorResponse(res, err.message);
   }
 };
