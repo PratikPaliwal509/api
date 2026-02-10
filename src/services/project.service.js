@@ -256,11 +256,34 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
           }
         }
       },
-       tasks: {
+      tasks: {
         include: {
           timeLogs: true, // include time logs per task
         },
       },
+      client: {
+        select: {
+          client_id: true,
+          company_name: true,
+          industry: true,
+          website: true,
+          primary_contact_name: true,
+          primary_contact_email: true,
+          primary_contact_phone: true,
+          address: true,
+          city: true,
+          state: true,
+          country: true,
+          portal_user: {
+            select: {
+              user_id: true,
+              full_name: true, // ✅ CLIENT DISPLAY NAME
+              email: true,
+            },
+          },
+        },
+      },
+
     }
   });
 
@@ -277,7 +300,7 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
   }
 
   // ⏱️ TIME SUMMARY (SOURCE OF TRUTH)
- 
+
   // Helper to convert minutes to HH:MM
   const toHHMM = (minutes = 0) => {
     const h = Math.floor(minutes / 60);
@@ -700,10 +723,10 @@ exports.getAvailableUsersForProject = async (
       full_name: true,
       email: true,
       role: {
-      select: {
-        role_name: true,
+        select: {
+          role_name: true,
+        },
       },
-    },
     },
     orderBy: {
       full_name: "asc",
