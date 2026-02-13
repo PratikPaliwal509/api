@@ -99,7 +99,6 @@ exports.updateProjectStatus = async (req, res) => {
   const projectId = parseInt(req.params.id)
   const { status } = req.body
   const userId = req.user?.id  // assuming your auth sets req.user
-
   if (!status) {
     return res.status(400).json({ success: false, message: 'Status is required' })
   }

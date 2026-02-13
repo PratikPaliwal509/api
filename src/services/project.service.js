@@ -483,7 +483,6 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
     where: { project_id: projectId },
     data: { status },
   })
-
   await NotificationService.createNotification({
     user_id: project.project_manager_id,
     notification_type: 'PROJECT_STATUS_UPDATED',

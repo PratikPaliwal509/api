@@ -296,14 +296,16 @@ exports.createUser = async (data) => {
       creator: {
         connect: { user_id: created_by },
       },
-      department: {
-        connect: { department_id: Number(department_id) }
-      },
-      team: {
-        connect: {
-          team_id: Number(team_id)
-        }
-      }
+      ...(department_id && {
+        department: {
+          connect: { department_id: Number(department_id) },
+        },
+      }),
+      ...(team_id && {
+        team: {
+          connect: { team_id: Number(team_id) },
+        },
+      }),
     },
     select: {
       user_id: true,
