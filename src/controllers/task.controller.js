@@ -87,7 +87,7 @@ const changeStatus = async (req, res) => {
       Number(req.params.id),
       req.body.status
     );
-
+console.log(task)
     return successResponse(res, 'Task status updated', task);
   } catch (err) {
     return errorResponse(res, err.message);

@@ -330,14 +330,105 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
 /**
  * Change Task Status
  */
+// const changeStatus = async (taskId, status) => {
+//   console.log(taskId, status)
+//   return prisma.task.update({
+//     where: { task_id: taskId },
+//     data: {
+//       status,
+//       completed_at: status === 'completed' ? new Date() : null
+//     }
+//   });
+// };
 const changeStatus = async (taskId, status) => {
-  return prisma.task.update({
+
+  // 1️⃣ Fetch task
+  const task = await prisma.task.findUnique({
+    where: { task_id: taskId },
+    select: {
+      task_id: true,
+      task_title: true,
+      status: true,
+      depends_on: true,
+      blocks: true,
+      project_id: true
+    }
+  });
+
+  if (!task) {
+    throw new Error('Task not found');
+  }
+
+  /* ---------------------------------------------------
+     2️⃣ DEPENDENCY VALIDATION (Incoming dependency)
+     If task depends on others → ensure they are completed
+  ---------------------------------------------------- */
+
+  if (['in_progress', 'completed'].includes(status)) {
+console.log("task.depends_on", task.depends_on)
+    if (task.depends_on?.length > 0) {
+
+      const dependencies = await prisma.task.findMany({
+        where: { task_id: { in: task.depends_on } },
+        select: { task_title: true, status: true }
+      });
+
+      const incompleteDependencies = dependencies.filter(
+        dep => dep.status !== 'completed'
+      );
+
+      if (incompleteDependencies.length > 0) {
+        const blockedBy = incompleteDependencies
+          .map(dep => dep.task_title)
+          .join(', ');
+
+        throw new Error(
+          `Task is blocked. Complete dependency task(s): ${blockedBy}`
+        );
+      }
+    }
+  }
+
+  /* ---------------------------------------------------
+     3️⃣ BLOCKING VALIDATION (Outgoing dependency)
+     If task blocks others → prevent reverting if they are active
+  ---------------------------------------------------- */
+console.log("status", status, task.blocks)
+  if (status !== 'completed' && task.blocks?.length > 0) {
+
+    const blockedTasks = await prisma.task.findMany({
+      where: { task_id: { in: task.blocks } },
+      select: { task_title: true, status: true }
+    });
+
+    const activeBlockedTasks = blockedTasks.filter(
+      t => ['in_progress', 'completed'].includes(t.status)
+    );
+
+    if (activeBlockedTasks.length > 0) {
+      const affected = activeBlockedTasks
+        .map(t => t.task_title)
+        .join(', ');
+
+      throw new Error(
+        `Cannot revert this task. It is blocking active task(s): ${affected}`
+      );
+    }
+  }
+
+  /* ---------------------------------------------------
+     4️⃣ Safe Update
+  ---------------------------------------------------- */
+
+  const updatedTask = await prisma.task.update({
     where: { task_id: taskId },
     data: {
       status,
       completed_at: status === 'completed' ? new Date() : null
     }
   });
+
+  return updatedTask;
 };
 
 /**
