@@ -1,7 +1,7 @@
 
-const { use } = require('react');
 const prisma = require('../config/db');
 const { sendEmail } = require('./email.service.js')
+const { getIO } = require('../socket');
 /**
  * Create notification
  */
@@ -42,7 +42,9 @@ const { sendEmail } = require('./email.service.js')
 //   return notification
 // }
 
+
 const createNotification = async (data) => {
+  const io = getIO();
 
   // =========================
   // 1️⃣ MAIN USER NOTIFICATION
@@ -59,14 +61,20 @@ const createNotification = async (data) => {
       sent_via_email: data.sent_via_email || false,
       sent_via_push: data.sent_via_push || false
     }
-  })
+  });
+
+  // Emit real-time notification to the user
+  if (io) {
+    io.to(data.user_id).emit('notification', notification);
+
+  }
 
   // 📧 Email to main user
   if (data.sent_via_email) {
     const user = await prisma.user.findUnique({
       where: { user_id: data.user_id },
       select: { email: true, first_name: true }
-    })
+    });
 
     if (user?.email) {
       try {
@@ -85,10 +93,9 @@ const createNotification = async (data) => {
   // 🔔 ADMIN NOTIFICATIONS
   // =========================
   if (data.send_to_admin === true) {
-
     const admins = await prisma.user.findMany({
       where: {
-        role: { role_name: 'Admin' }, // adjust case if needed
+        role: { role_name: 'Admin' },
         is_active: true
       },
       select: {
@@ -96,15 +103,14 @@ const createNotification = async (data) => {
         email: true,
         first_name: true
       }
-    })
+    });
 
     for (const admin of admins) {
-
       // 📝 choose admin message
-      const adminMessage = data.admin_message || data.message
+      const adminMessage = data.admin_message || data.message;
 
       // Create admin notification
-      await prisma.notification.create({
+      const adminNotification = await prisma.notification.create({
         data: {
           user_id: admin.user_id,
           notification_type: data.notification_type,
@@ -116,7 +122,13 @@ const createNotification = async (data) => {
           sent_via_email: data.sent_via_email || false,
           sent_via_push: data.sent_via_push || false
         }
-      })
+      });
+
+      // Emit real-time notification to the admin
+      if (io) {
+        io.to(admin.user_id).emit('notification', adminNotification);
+
+      }
 
       // 📧 Email admin (optional)
       if (data.sent_via_email && admin.email) {
@@ -127,12 +139,12 @@ const createNotification = async (data) => {
             <p>Hi ${admin.first_name},</p>
             <p>${adminMessage}</p>
           `
-        })
+        });
       }
     }
   }
 
-  return notification
+  return notification;
 }
 
 

@@ -54,7 +54,8 @@ const createTask = async (data, userId) => {
     message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
     entity_type: 'TASK',
     entity_id: task.task_id,
-    action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+    action_url: `/applications/tasks`,
+    // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
 
     // delivery
     sent_via_email: true,
@@ -90,7 +91,8 @@ const createTask = async (data, userId) => {
         message: `A task "${task.task_title}" requires your approval in project "${project.project_name}".`,
         entity_type: 'TASK',
         entity_id: task.task_id,
-        action_url: `/client/projects/${task.project_id}/tasks/${task.task_id}`,
+        action_url: `/applications/tasks`,
+        // action_url: `/client/projects/${task.project_id}/tasks/${task.task_id}`,
         sent_via_email: true
       });
     }
@@ -311,7 +313,8 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
       message: `You have been assigned to task "${task.task_title}" (${task.task_number}).`,
       entity_type: 'TASK',
       entity_id: task.task_id,
-      action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+      action_url: `/applications/tasks`,
+      // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
 
       sent_via_email: true,
       sent_via_push: false,
@@ -773,7 +776,8 @@ const approveTaskByClient = async (taskId, userId) => {
       message: `Task "${task.task_title}" (${task.task_number}) has been approved by the client.`,
       entity_type: 'TASK',
       entity_id: task.task_id,
-      action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+      action_url: `/applications/tasks`,
+      // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
       sent_via_email: true,
     })
   }

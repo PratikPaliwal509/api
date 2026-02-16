@@ -1,12 +1,19 @@
+
 require('dotenv').config();
 const app = require("./app");
-const PORT =  process.env.PORT;
+const http = require('http');
+const { initSocket } = require('./socket');
+const PORT = process.env.PORT;
 
-//To solve the problem of classical prisma bigint isshue
+//To solve the problem of classical prisma bigint issue
 BigInt.prototype.toJSON = function () {
   return Number(this)
 }
 
-app.listen(PORT, () => {
+// Create HTTP server and attach socket.io
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
 });

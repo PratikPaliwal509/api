@@ -146,7 +146,7 @@ exports.createProject = async (data, userId, agencyId) => {
     message: `Project "${project.project_name}" has been created successfully.`,
     entity_type: 'PROJECT',
     entity_id: project.project_id,
-    action_url: `/projects/${project.project_id}`,
+    action_url: `/projects/view/${project.project_id}`,
     sent_via_email: true,
     send_to_admin: true,
     admin_message: `Admin alert: Project "${project.project_name}" has been created.`
@@ -229,7 +229,8 @@ exports.getProjectsByScope = async (user) => {
     orderBy: { created_at: 'desc' },
     include: {
       client: true,
-      manager: true
+      manager: true,
+      tasks:true
     }
   });
 };
@@ -349,6 +350,22 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
     unbilled_amount: totalUnbilledAmount.toFixed(2),
   };
 
+  // 🎨 Priority Color Mapping
+const priorityMap = {
+  High: { bg: 'danger', text: 'white' },
+  Urgent: { bg: 'danger', text: 'white' },
+  Medium: { bg: 'warning', text: 'dark' },
+  Normal: { bg: 'primary', text: 'white' },
+  Low: { bg: 'success', text: 'white' },
+};
+
+// Attach colors to each task
+project.tasks = project.tasks.map(task => ({
+  ...task,
+  priorityBgColor: priorityMap[task.priority]?.bg || 'secondary',
+  priorityColor: priorityMap[task.priority]?.text || 'white',
+}));
+
 
   return project;
 };
@@ -437,7 +454,7 @@ exports.updateProject = async (projectId, data, userId) => {
     message: `Project "${updatedProject.project_name}" has been updated.`,
     entity_type: 'PROJECT',
     entity_id: updatedProject.project_id,
-    action_url: `/projects/${updatedProject.project_id}`,
+    action_url: `/projects/view/${updatedProject.project_id}`,
     sent_via_email: true,
     send_to_admin: true,
     admin_message: `Admin alert: Project "${updatedProject.project_name}" has been updated.`
@@ -455,7 +472,7 @@ exports.updateProject = async (projectId, data, userId) => {
       message: `You have been assigned as project manager for "${updatedProject.project_name}".`,
       entity_type: 'PROJECT',
       entity_id: updatedProject.project_id,
-      action_url: `/projects/${updatedProject.project_id}`,
+      action_url: `/projects/view/${updatedProject.project_id}`,
       sent_via_email: true,
       send_to_admin: true
     });
@@ -490,7 +507,7 @@ exports.updateProjectStatus = async (projectId, status, userId) => {
     message: `Project "${project.project_name}" status changed from "${project.status}" to "${status}".`,
     entity_type: 'PROJECT',
     entity_id: project.project_id,
-    action_url: `/projects/${project.project_id}`,
+    action_url: `/projects/view/${project.project_id}`,
     sent_via_email: true,
     send_to_admin: true,
     admin_message: `Admin alert: ${project.project_name}" status changed from "${project.status}" to "${status}`
@@ -590,7 +607,7 @@ exports.addProjectMember = async (
     message: `You have been added to the project "${project.project_name}" by ${addedByUser?.first_name || 'a manager'}.`,
     entity_type: 'PROJECT',
     entity_id: project.project_id,
-    action_url: `/projects/${project.project_id}`,
+    action_url: `/projects/view/${project.project_id}`,
     sent_via_email: true,
     send_to_admin: true,
     admin_message: `Admin alert: ${user.first_name} added to ${project.project_name}`
@@ -605,7 +622,7 @@ exports.addProjectMember = async (
       message: `${user.first_name} was added to project "${project.project_name}".`,
       entity_type: 'PROJECT',
       entity_id: project.project_id,
-      action_url: `/projects/${project.project_id}`,
+      action_url: `/projects/view/${project.project_id}`,
       sent_via_email: false,
       send_to_admin: true,
       admin_message: `Admin alert: ${user.first_name} added to ${project.project_name}`

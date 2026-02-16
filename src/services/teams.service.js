@@ -198,14 +198,57 @@ exports.getTeams = async (user) => {
     },
   })
 
-  return teams.map(team => ({
+  // Get project memberships for those users (I added this for tasks for teams)
+const projectMembers = await prisma.projectMember.findMany({
+  where: {
+    user_id: { in: users.map(u => u.user_id) },
+    is_active: true,
+  },
+  select: {
+    project_id: true,
+    user_id: true,
+  },
+});
+
+// Get unique project IDs
+const projectIds = [...new Set(projectMembers.map(pm => pm.project_id))];
+
+// Get tasks of those projects
+const tasks = await prisma.task.findMany({
+  where: {
+    project_id: { in: projectIds },
+  },
+  select: {
+    task_id: true,
+    task_title: true,
+    status: true,
+    progress_percentage: true,
+    project_id: true,
+  },
+});
+return teams.map(team => {
+  const teamUsers = users.filter(u => u.team_id === team.team_id);
+
+  const teamProjectIds = projectMembers
+    .filter(pm => teamUsers.some(u => u.user_id === pm.user_id))
+    .map(pm => pm.project_id);
+
+  const teamTasks = tasks.filter(t =>
+    teamProjectIds.includes(t.project_id)
+  );
+
+  return {
     ...team,
-    members: users.filter(u => u.team_id === team.team_id),
-  }))
+    members: teamUsers,
+    tasks: teamTasks,
+  };
+});
+
+  // return teams.map(team => ({
+  //   ...team,
+  //   members: users.filter(u => u.team_id === team.team_id),
+  // }))
 }
-
-
-
 
 
 // TEAM DETAILS
@@ -289,10 +332,58 @@ exports.getTeamById = async (id) => {
     },
     distinct: ['project_id'], // 🔥 IMPORTANT: avoid duplicates
   })
+
+  // 4️⃣ Tasks linked to those projects
+// 3️⃣ Get project IDs
+  const projectIds = teamProjects.map(p => p.project_id);
+
+  // 4️⃣ Tasks linked to those projects
+  const teamTasksRaw = await prisma.task.findMany({
+    where: {
+      project_id: { in: projectIds },
+      // is_active: true,
+    },
+    select: {
+      task_id: true,
+      task_title: true,
+      description: true,
+      status: true,
+      priority: true,
+      progress_percentage: true,
+      start_date: true,
+      due_date: true,
+    },
+    orderBy: {
+      created_at: 'desc',
+    },
+  });
+
+  // 5️⃣ Convert to Kanban Format
+  const priorityMap = {
+    High: { bg: 'danger', text: 'white' },
+    Medium: { bg: 'warning', text: 'dark' },
+    Low: { bg: 'success', text: 'white' },
+  };
+
+  const teamTasks = teamTasksRaw.map(task => ({
+    task_id: task.task_id,
+    title: task.task_title,
+    description: task.description || '',
+    status:
+      task.status === 'in_progress'
+        ? 'inprogress'
+        : task.status, // match your column keys
+    priority: task.priority,
+    priorityBgColor: priorityMap[task.priority]?.bg || 'secondary',
+    priorityColor: priorityMap[task.priority]?.text || 'white',
+  }));
+
+
   return {
     ...team,
     members: teamMembers,
     projects: teamProjects,
+     tasks: teamTasks,
   };
 };
 
