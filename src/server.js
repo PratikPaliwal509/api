@@ -4,6 +4,14 @@ const app = require("./app");
 const http = require('http');
 const { initSocket } = require('./socket');
 const PORT = process.env.PORT;
+const cron = require('node-cron');
+const { checkTaskReminders } = require('./services/taskReminder.service');
+
+// Uncomment this for reminders
+// Run every day at 9 AM
+// cron.schedule('0 9 * * *', async () => {
+//   await checkTaskReminders();
+// });
 
 //To solve the problem of classical prisma bigint issue
 BigInt.prototype.toJSON = function () {
