@@ -553,10 +553,17 @@ const getLast7Days = () => {
 
 /* ---------- Service ---------- */
 
-const getTasksOverview = async () => {
-  const days = getLast7Days();
+const getTasksOverview = async (userId, startDate, endDate) => {
 
-  /* ---------- TOTAL COUNTS (for cards) ---------- */
+  const dateFilter =
+    startDate && endDate
+      ? {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        }
+      : null;
+
+  /* ---------- TOTAL COUNTS ---------- */
 
   const [
     totalTasks,
@@ -564,17 +571,64 @@ const getTasksOverview = async () => {
     totalProjects,
     totalCompletedProjects,
   ] = await Promise.all([
-    prisma.task.count(),
     prisma.task.count({
-      where: { status: 'completed' },
+      where: {
+        ...(dateFilter && { created_at: dateFilter }),
+      },
     }),
-    prisma.project.count(),
+
+    prisma.task.count({
+      where: {
+        status: "completed",
+        ...(dateFilter && { completed_at: dateFilter }),
+      },
+    }),
+
     prisma.project.count({
-      where: { status: 'finished' },
+      where: {
+        ...(dateFilter && { created_at: dateFilter }),
+      },
+    }),
+
+    prisma.project.count({
+      where: {
+        status: "finished",
+        ...(dateFilter && { updated_at: dateFilter }),
+      },
     }),
   ]);
 
-  /* ---------- DAILY COUNTS (for charts) ---------- */
+  /* ---------- DAYS GENERATION ---------- */
+
+  const getLast7Days = () => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      days.push(date);
+    }
+    return days;
+  };
+
+  const getDaysBetween = (start, end) => {
+    const days = [];
+    let current = new Date(start);
+    const last = new Date(end);
+
+    while (current <= last) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return days;
+  };
+
+  const days =
+    startDate && endDate
+      ? getDaysBetween(startDate, endDate)
+      : getLast7Days();
+
+  /* ---------- DAILY COUNTS ---------- */
 
   const completedTasksPerDay = await Promise.all(
     days.map(async (day) => {
@@ -583,7 +637,7 @@ const getTasksOverview = async () => {
 
       return prisma.task.count({
         where: {
-          status: 'completed',
+          status: "completed",
           completed_at: {
             gte: day,
             lt: nextDay,
@@ -616,7 +670,7 @@ const getTasksOverview = async () => {
 
       return prisma.project.count({
         where: {
-          status: 'finished',
+          status: "finished",
           updated_at: {
             gte: day,
             lt: nextDay,
@@ -625,50 +679,51 @@ const getTasksOverview = async () => {
       });
     })
   );
-  /* ---------- RESPONSE ---------- */
-const totalNewTasksLast7Days = newTasksPerDay.reduce((a, b) => a + b, 0);
-const totalCompletedLast7Days = completedTasksPerDay.reduce((a, b) => a + b, 0);
+
+  const totalNewTasksLastRange = newTasksPerDay.reduce((a, b) => a + b, 0);
+  const totalCompletedLastRange = completedTasksPerDay.reduce(
+    (a, b) => a + b,
+    0
+  );
+
   return [
     {
-      title: 'Tasks Completed',
+      title: "Tasks Completed",
       total_number: totalTasks,
       completed_number: totalCompletedTasks,
       progress: totalTasks
         ? Math.round((totalCompletedTasks / totalTasks) * 100)
         : 0,
-      chartColor: '#3454d1',
-      color: 'primary',
+      chartColor: "#3454d1",
+      color: "primary",
       chartData: completedTasksPerDay,
     },
     {
-      title: 'New Tasks',
-      total_number: totalNewTasksLast7Days,
-      completed_number: totalCompletedLast7Days,
-      progress: totalNewTasksLast7Days
+      title: "New Tasks",
+      total_number: totalNewTasksLastRange,
+      completed_number: totalCompletedLastRange,
+      progress: totalNewTasksLastRange
         ? Math.round(
-          (totalCompletedLast7Days  / totalNewTasksLast7Days) * 100
-        )
+            (totalCompletedLastRange / totalNewTasksLastRange) * 100
+          )
         : 0,
-      chartColor: '#25b865',
-      color: 'success',
+      chartColor: "#25b865",
+      color: "success",
       chartData: newTasksPerDay,
     },
     {
-      title: 'Project Done',
+      title: "Project Done",
       total_number: totalProjects,
       completed_number: totalCompletedProjects,
       progress: totalProjects
-        ? Math.round(
-          (totalCompletedProjects / totalProjects) * 100
-        )
+        ? Math.round((totalCompletedProjects / totalProjects) * 100)
         : 0,
-      chartColor: '#d13b4c',
-      color: 'danger',
+      chartColor: "#d13b4c",
+      color: "danger",
       chartData: completedProjectsPerDay,
     },
   ];
 };
-
 // services/task.service.js
 const getProjectTasks = async (projectId) => {
   try {

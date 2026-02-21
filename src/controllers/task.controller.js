@@ -182,9 +182,15 @@ const removeAssignment = async (req, res) => {
 
 const getTasksOverview = async (req, res, next) => {
   try {
-    const userId = req.user.user_id; // from auth middleware
+    const userId = req.user.user_id;
 
-    const overview = await taskService.getTasksOverview(userId);
+    const { startDate, endDate } = req.query;
+
+    const overview = await taskService.getTasksOverview(
+      userId,
+      startDate,
+      endDate
+    );
 
     res.status(200).json({
       success: true,
