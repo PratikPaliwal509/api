@@ -145,3 +145,26 @@ exports.getClientsWithoutNotes = async (req, res) => {
     })
   }
 }
+
+exports.generateInvoice = async (req, res) => {
+  try {
+    console.log("Received request to generate invoice with params:", req.params, "and user:", req.user)
+    const { clientId } = req.params;
+    const agencyId = req.user.agency.agency_id; // assuming auth middleware sets this
+console.log("Generating invoice for clientId:", clientId, "agencyId:", agencyId)
+    const invoice = await clientsService.generateInvoice(clientId, agencyId);
+
+    res.status(201).json({
+      success: true,
+      message: "Invoice generated successfully",
+      data: invoice
+    });
+
+  } catch (error) {
+    console.error("Error generating invoice:", error); 
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

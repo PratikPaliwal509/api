@@ -5,6 +5,7 @@ const clientsController = require('../controllers/clients.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const logActivity = require('../middlewares/activityLog.middleware');
 
+router.post("/generate/:clientId", authMiddleware, clientsController.generateInvoice);
 // Create client
 router.post('/', authMiddleware,  logActivity({
     action: 'CREATE CLIENT',
@@ -46,6 +47,7 @@ router.patch('/:id/status', authMiddleware, logActivity({
     getChanges: (req, res, response) => response?.data || req.body
   }), clientsController.updateClientStatus);
 
+  
 
   
 // DELETE client Not required currently

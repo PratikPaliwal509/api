@@ -190,18 +190,18 @@ exports.getClientById = async (id) => {
       unbilled_amount: totalUnbilledAmount.toFixed(2)
     };
   });
-// Flatten all tasks from projects
-const clientTasks = client.projects.flatMap(project =>
-  project.tasks.map(task => ({
-    ...task,
-    project_id: project.project_id,
-    project_name: project.project_name
-  }))
-)
+  // Flatten all tasks from projects
+  const clientTasks = client.projects.flatMap(project =>
+    project.tasks.map(task => ({
+      ...task,
+      project_id: project.project_id,
+      project_name: project.project_name
+    }))
+  )
 
   return {
     ...client,
-     tasks: clientTasks,
+    tasks: clientTasks,
     projectCost
   };
 };
@@ -332,3 +332,112 @@ exports.getClientsWithoutNotesService = async (agency_id) => {
     },
   })
 }
+
+exports.generateInvoice = async (clientId) => {
+
+  // 1️⃣ Get projects of client
+  const projects = await prisma.project.findMany({
+    where: { client_id: parseInt(clientId) },
+    select: { project_id: true }
+  });
+
+  const projectIds = projects.map(p => p.project_id);
+console.log("Projects for client:", projectIds);
+  if (!projectIds.length) {
+    throw new Error("No projects found for this client");
+  }
+
+  // 2️⃣ Filter only COMPLETED projects with all tasks completed
+  const projectsWithTasks = await prisma.project.findMany({
+    where: {
+      project_id: { in: projectIds }
+    },
+    include: {
+      tasks: true
+    }
+  });
+
+  const completedProjects = [];
+
+  for (const project of projectsWithTasks) {
+
+    if (project.status !== "finished") {
+      continue;
+    }
+
+    const hasIncompleteTask = project.tasks.some(
+      task => task.status !== "completed"
+    );
+
+    if (hasIncompleteTask) {
+      continue;
+    }
+
+    completedProjects.push(project.project_id);
+  }
+
+  if (!completedProjects.length) {
+    throw new Error("No completed projects available for invoicing");
+  }
+console.log("Completed projects for invoicing:", completedProjects);
+  // 3️⃣ Get tasks of completed projects
+  const tasks = await prisma.task.findMany({
+    where: {
+      project_id: { in: completedProjects }
+    },
+    select: { task_id: true }
+  });
+
+  const taskIds = tasks.map(t => t.task_id);
+
+  if (!taskIds.length) {
+    throw new Error("No tasks found for completed projects");
+  }
+
+  // 4️⃣ Get time logs
+  const timeLogs = await prisma.timeLog.findMany({
+    where: {
+      task_id: { in: taskIds },
+      is_billable: true,
+      is_approved: true,
+      is_invoiced: false
+    },
+    include: {
+      task: {
+        include: {
+          project: true
+        }
+      }
+    }
+  });
+
+  if (!timeLogs.length) {
+    throw new Error("No billable approved time logs found");
+  }
+
+  // 5️⃣ Calculate total
+  let total = 0;
+
+  const items = timeLogs.map(log => {
+    const hours = log.duration_minutes / 60;
+    const rate = Number(log.hourly_rate || 0);
+    const amount = hours * rate;
+
+    total += amount;
+
+    return {
+      project: log.task.project.project_name,
+      task: log.task.task_title,
+      hours,
+      rate,
+      amount
+    };
+  });
+
+  return {
+    client_id: clientId,
+    invoiced_projects: completedProjects,
+    items,
+    total_amount: total
+  };
+};
