@@ -36,9 +36,7 @@ const createTask = async (data, userId) => {
       tags: data.labels || [],
       depends_on: data.depends_on || [],
       blocks: data.blocks || [],
-      assignments: {
-      create: (data.assignees || []).map(id => ({ user_id: id })),
-    },
+      assigned_to: data.assignees || [],
       // ✅ CLIENT FIELDS
       visible_to_client: Boolean(data.visible_to_client),
       client_approval_required: Boolean(data.client_approval_required),
