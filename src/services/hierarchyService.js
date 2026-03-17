@@ -13,7 +13,7 @@ const getUserHierarchy = async () => {
         teams: {
           include: {
             team_lead: true, // Team lead
-            users: true      // Team members
+            users: true,   // Team members
           }
         }
       }

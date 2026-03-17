@@ -36,6 +36,9 @@ const createTask = async (data, userId) => {
       tags: data.labels || [],
       depends_on: data.depends_on || [],
       blocks: data.blocks || [],
+      assignments: {
+      create: (data.assignees || []).map(id => ({ user_id: id })),
+    },
       // ✅ CLIENT FIELDS
       visible_to_client: Boolean(data.visible_to_client),
       client_approval_required: Boolean(data.client_approval_required),
@@ -47,7 +50,7 @@ const createTask = async (data, userId) => {
     }
   });
 
-  await NotificationService.createNotification({
+  NotificationService.createNotification({
     user_id: userId, // who created task
     notification_type: 'TASK_CREATED',
     title: 'New Task Created',
@@ -65,38 +68,33 @@ const createTask = async (data, userId) => {
     send_to_admin: true,
     admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
   })
+  // 4️⃣ Client approval notification (async)
   if (task.visible_to_client && task.client_approval_required) {
-    // 🔎 Fetch client users of this project
-    const project = await prisma.project.findUnique({
-      where: {
-        project_id: task.project_id,
-      },
-      select: {
-        project_name: true,
-        client: {
-          select: {
-            client_id: true,
-            portal_user_id: true,
-            company_name: true
-          }
+    prisma.project
+      .findUnique({
+        where: { project_id: task.project_id },
+        select: {
+          project_name: true,
+          client: { select: { portal_user_id: true } },
+        },
+      })
+      .then((project) => {
+        const portalUserId = project?.client?.portal_user_id;
+        if (portalUserId) {
+          NotificationService.createNotification({
+            user_id: portalUserId,
+            notification_type: 'TASK_APPROVAL_REQUIRED',
+            title: 'Task Approval Required',
+            message: `A task "${task.task_title}" requires your approval in project "${project.project_name}".`,
+            entity_type: 'TASK',
+            entity_id: task.task_id,
+            action_url: `/applications/tasks`,
+            sent_via_email: true,
+          }).catch(console.error);
         }
-      }
-    })
-    const portalUserId = project?.client?.portal_user_id;
-    if (portalUserId) {
-      await NotificationService.createNotification({
-        user_id: portalUserId,
-        notification_type: 'TASK_APPROVAL_REQUIRED',
-        title: 'Task Approval Required',
-        message: `A task "${task.task_title}" requires your approval in project "${project.project_name}".`,
-        entity_type: 'TASK',
-        entity_id: task.task_id,
-        action_url: `/applications/tasks`,
-        // action_url: `/client/projects/${task.project_id}/tasks/${task.task_id}`,
-        sent_via_email: true
-      });
+      })
+      .catch(console.error);
     }
-  }
   return task;
 };
 
