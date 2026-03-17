@@ -231,6 +231,7 @@ exports.getUserByTokenService = async (userId) => {
 }
 
 exports.createUser = async (data) => {
+  console.log('Creating user with data:', data);
   const {
     first_name,
     last_name,
@@ -244,7 +245,7 @@ exports.createUser = async (data) => {
     job_title,
     department_id,
     team_id
-  } = data.formData;
+  } = data;
   const created_by = data.created_by;
   // check if user already exists
   const existingUser = await prisma.user.findUnique({
