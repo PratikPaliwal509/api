@@ -92,7 +92,7 @@ const createTask = async (data, userId) => {
         }
       })
       .catch(console.error);
-    }
+  }
   return task;
 };
 
@@ -340,7 +340,6 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
 //   });
 // };
 const changeStatus = async (taskId, status) => {
-
   // 1️⃣ Fetch task
   const task = await prisma.task.findUnique({
     where: { task_id: taskId },
@@ -364,7 +363,6 @@ const changeStatus = async (taskId, status) => {
   ---------------------------------------------------- */
 
   if (['in_progress', 'completed'].includes(status)) {
-console.log("task.depends_on", task.depends_on)
     if (task.depends_on?.length > 0) {
 
       const dependencies = await prisma.task.findMany({
@@ -392,7 +390,6 @@ console.log("task.depends_on", task.depends_on)
      3️⃣ BLOCKING VALIDATION (Outgoing dependency)
      If task blocks others → prevent reverting if they are active
   ---------------------------------------------------- */
-console.log("status", status, task.blocks)
   if (status !== 'completed' && task.blocks?.length > 0) {
 
     const blockedTasks = await prisma.task.findMany({
@@ -554,9 +551,9 @@ const getTasksOverview = async (userId, startDate, endDate) => {
   const dateFilter =
     startDate && endDate
       ? {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        }
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      }
       : null;
 
   /* ---------- TOTAL COUNTS ---------- */
@@ -700,8 +697,8 @@ const getTasksOverview = async (userId, startDate, endDate) => {
       completed_number: totalCompletedLastRange,
       progress: totalNewTasksLastRange
         ? Math.round(
-            (totalCompletedLastRange / totalNewTasksLastRange) * 100
-          )
+          (totalCompletedLastRange / totalNewTasksLastRange) * 100
+        )
         : 0,
       chartColor: "#25b865",
       color: "success",
@@ -769,7 +766,6 @@ const getProjectTasks = async (projectId) => {
         task.created_at,
     }))
   } catch (error) {
-    console.error('Error fetching project tasks:', error)
     throw new Error('Failed to fetch project tasks')
   }
 }
@@ -837,6 +833,31 @@ const approveTaskByClient = async (taskId, userId) => {
 }
 
 
+const changePriority = async (taskId, priority) => {
+  const task = await prisma.task.findUnique({
+    where: { task_id: taskId }
+  })
+
+  if (!task) throw new Error('Task not found')
+
+  return prisma.task.update({
+    where: { task_id: taskId },
+    data: { priority }
+  })
+}
+
+const changeTaskType = async (taskId, task_type) => {
+  const task = await prisma.task.findUnique({
+    where: { task_id: taskId }
+  })
+
+  if (!task) throw new Error('Task not found')
+
+  return prisma.task.update({
+    where: { task_id: taskId },
+    data: { task_type }
+  })
+}
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -849,5 +870,8 @@ module.exports = {
   addChecklistToTask,
   getTasksOverview,
   getProjectTasks,
-  approveTaskByClient
+  approveTaskByClient,
+  changePriority,
+  changeTaskType
+
 };

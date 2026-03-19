@@ -9,7 +9,6 @@ const createTask = async (req, res) => {
     const task = await taskService.createTask(req.body, req.user.user_id);
     return successResponse(res, 'Task created successfully', task, 201);
   } catch (err) {
-    console.error(err);
     return errorResponse(res, err.message);
   }
 };
@@ -38,7 +37,6 @@ const getTaskById = async (req, res) => {
     }
     return successResponse(res, 'Task details fetched', task);
   } catch (err) {
-    console.log(err)
     return errorResponse(res, err.message);
   }
 };
@@ -73,7 +71,6 @@ const assignUsers = async (req, res) => {
 
     return successResponse(res, 'Users assigned to task');
   } catch (err) {
-    console.log(err)
     return errorResponse(res, err.message);
   }
 };
@@ -87,7 +84,6 @@ const changeStatus = async (req, res) => {
       Number(req.params.id),
       req.body.status
     );
-console.log(task)
     return successResponse(res, 'Task status updated', task);
   } catch (err) {
     return errorResponse(res, err.message);
@@ -149,7 +145,6 @@ const addTaskChecklist = async (req, res) => {
       data: task
     })
   } catch (error) {
-    console.error(error)
     res.status(500).json({
       message: 'Failed to add checklist'
     })
@@ -172,7 +167,6 @@ const removeAssignment = async (req, res) => {
       data: result,
     })
   } catch (error) {
-    console.log(error)
     res.status(403).json({
       success: false,
       message: error.message,
@@ -205,7 +199,7 @@ const getTasksOverview = async (req, res, next) => {
 const getProjectTasks = async (req, res) => {
   try {
     // const { projectId } = req.params
-const projectId = req.params.id
+    const projectId = req.params.id
     if (!projectId) {
       return res.status(400).json({
         success: false,
@@ -221,7 +215,6 @@ const projectId = req.params.id
       count: tasks.length,
     })
   } catch (error) {
-    console.error('Error in getProjectTasks controller:', error)
     return res.status(500).json({
       success: false,
       message: error.message || 'Failed to fetch project tasks',
@@ -242,11 +235,42 @@ const approveTask = async (req, res) => {
       200
     )
   } catch (error) {
-    console.error('Task approval error:', error)
     return errorResponse(res, error.message)
   }
 }
 
+
+/**
+ * PATCH /tasks/:id/priority
+ */
+const changePriority = async (req, res) => {
+  try {
+    const task = await taskService.changePriority(
+      Number(req.params.id),
+      req.body.priority
+    )
+
+    return successResponse(res, 'Task priority updated', task)
+  } catch (err) {
+    return errorResponse(res, err.message)
+  }
+}
+
+/**
+ * PATCH /tasks/:id/type
+ */
+const changeTaskType = async (req, res) => {
+  try {
+    const task = await taskService.changeTaskType(
+      Number(req.params.id),
+      req.body.task_type
+    )
+
+    return successResponse(res, 'Task type updated', task)
+  } catch (err) {
+    return errorResponse(res, err.message)
+  }
+}
 module.exports = {
   createTask,
   removeAssignment,
@@ -260,5 +284,7 @@ module.exports = {
   addTaskChecklist,
   getTasksOverview,
   getProjectTasks,
-  approveTask
+  approveTask,
+  changeTaskType,
+  changePriority,
 };

@@ -71,5 +71,27 @@ router.post(
   taskController.approveTask
 )
 
+// UPDATE Priority
+router.patch('/:id/priority',
+  logActivity({
+    action: 'UPDATE PRIORITY',
+    entityType: 'Task',
+    getEntityId: (req) => Number(req.params.id),
+    getEntityName: (req, res, body) => body?.data?.task_title || 'Task',
+    getChanges: (req) => ({ priority: req.body.priority })
+  }),
+  taskController.changePriority
+)
 
+// UPDATE Task Type
+router.patch('/:id/type',
+  logActivity({
+    action: 'UPDATE TYPE',
+    entityType: 'Task',
+    getEntityId: (req) => Number(req.params.id),
+    getEntityName: (req, res, body) => body?.data?.task_title || 'Task',
+    getChanges: (req) => ({ task_type: req.body.task_type })
+  }),
+  taskController.changeTaskType
+)
 module.exports = router;
