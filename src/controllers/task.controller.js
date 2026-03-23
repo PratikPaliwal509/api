@@ -271,6 +271,28 @@ const changeTaskType = async (req, res) => {
     return errorResponse(res, err.message)
   }
 }
+
+const changeTaskTags = async(req, res)=> {
+    try {
+      console.log("Running")
+        const taskId = Number(req.params.id);
+        const { tags } = req.body;
+
+        const updatedTask = await taskService.updateTaskTags(taskId, tags);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Task tags updated successfully',
+            data: updatedTask
+        });
+    } catch (error) {
+        console.error('changeTaskTags error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update task tags'
+        });
+    }
+}
 module.exports = {
   createTask,
   removeAssignment,
@@ -287,4 +309,5 @@ module.exports = {
   approveTask,
   changeTaskType,
   changePriority,
+  changeTaskTags
 };

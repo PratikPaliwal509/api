@@ -94,4 +94,15 @@ router.patch('/:id/type',
   }),
   taskController.changeTaskType
 )
+
+router.patch('/:id/tags',
+  logActivity({
+    action: 'UPDATE TAGS',
+    entityType: 'Task',
+    getEntityId: (req) => Number(req.params.id),
+    getEntityName: (req, res, body) => body?.data?.task_title || 'Task',
+    getChanges: (req) => ({ tags: req.body.tags })
+  }),
+  taskController.changeTaskTags
+);
 module.exports = router;

@@ -858,6 +858,22 @@ const changeTaskType = async (taskId, task_type) => {
     data: { task_type }
   })
 }
+
+const  updateTaskTags = async (taskId, tags) => {
+    try {
+        const updatedTask = await prisma.task.update({
+            where: { task_id: taskId },
+            data: {
+                tags: tags   // ✅ String[]
+            }
+        });
+
+        return updatedTask;
+    } catch (error) {
+        console.error('updateTaskTags service error:', error);
+        throw error;
+    }
+}
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -872,6 +888,7 @@ module.exports = {
   getProjectTasks,
   approveTaskByClient,
   changePriority,
-  changeTaskType
+  changeTaskType,
+  updateTaskTags
 
 };
