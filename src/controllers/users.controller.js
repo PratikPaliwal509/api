@@ -198,19 +198,19 @@ exports.getUsersWithoutTeam = async (req, res, next) => {
 // };
 
 // controllers/auth.controller.js
-exports.getUserByToken = async (req, res) => {
-  try {
-    return res.status(200).json({
-      success: true,
-      data: req.user
-    })
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch user'
-    })
-  }
-}
+// exports.getUserByToken = async (req, res) => {
+//   try {
+//     return res.status(200).json({
+//       success: true,
+//       data: req.user
+//     })
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch user'
+//     })
+//   }
+// }
 
 exports.getUserByToken = async (req, res) => {
   try {
