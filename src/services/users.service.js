@@ -192,27 +192,55 @@ exports.getUserByTokenService = async (userId) => {
       user_id: Number(userId)
     },
     select: {
-      user_id: true,
-      first_name: true,
-      last_name: true,
-      email: true,
-      is_active: true,
-      created_at: true,
-      phone: true,
-      mobile: true,
-      avatar_url: true,
-      bio: true,
-      job_title: true,
-      date_of_joining: true,
-      timezone: true,
-      role: {
-        select: {
-          role_id: true,
-          role_name: true,
-          permissions: true
-        }
-      }
+  user_id: true,
+  first_name: true,
+  last_name: true,
+  email: true,
+  is_active: true,
+  created_at: true,
+  updated_at: true,
+
+  phone: true,
+  mobile: true,
+  avatar_url: true,
+  bio: true,
+  job_title: true,
+  date_of_joining: true,
+  timezone: true,
+  language: true,
+
+  // 🔐 Security
+  two_factor_enabled: true,   // (true = Verified, false = Disabled)
+
+  // 🌐 System Info
+  last_login_at: true,
+  last_login_ip: true,
+
+  // 👤 Role
+  role: {
+    select: {
+      role_id: true,
+      role_name: true,
+      permissions: true
     }
+  },
+
+  // 🏢 Department
+  department: {
+    select: {
+      department_id: true,
+      department_name: true
+    }
+  },
+
+  // 👥 Team
+  team: {
+    select: {
+      team_id: true,
+      team_name: true
+    }
+  }
+}
   })
 
   if (!user) {
