@@ -4,16 +4,17 @@ const router = express.Router();
 const clientsController = require('../controllers/clients.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const logActivity = require('../middlewares/activityLog.middleware');
-
-router.post("/generate/:clientId", authMiddleware, clientsController.generateInvoice);
-// Create client
-router.post('/', authMiddleware,  logActivity({
+console.log("hfhfhfhfh")
+router.post('/add', authMiddleware,  logActivity({
     action: 'CREATE CLIENT',
     entityType: 'Client',
     getEntityId: (req, res, response) => response?.data?.client_id,
     getEntityName: (req, res, response) => response?.data?.client_name,
     getChanges: (req, res, response) => response?.data
   }), clientsController.createClient);
+
+router.post("/generate/:clientId", authMiddleware, clientsController.generateInvoice);
+// Create client
 
   
 router.get("/notes", authMiddleware, clientsController.getClientNotes)

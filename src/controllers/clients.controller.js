@@ -4,6 +4,7 @@ const { successResponse } = require('../utils/response');
 // CREATE CLIENT
 exports.createClient = async (req, res, next) => {
   try {
+    console.log("createclient")
     const clientData = {
       ...req.body,
       created_by: req.user.user_id, // add logged-in user here
@@ -13,6 +14,7 @@ exports.createClient = async (req, res, next) => {
     const client = await clientsService.createClient(clientData);
     return successResponse(res, 'Client created successfully', client);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
