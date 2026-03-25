@@ -274,7 +274,6 @@ const changeTaskType = async (req, res) => {
 
 const changeTaskTags = async(req, res)=> {
     try {
-      console.log("Running")
         const taskId = Number(req.params.id);
         const { tags } = req.body;
 

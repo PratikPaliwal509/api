@@ -15,7 +15,6 @@ const createTask = async (data, userId) => {
     const parts = lastTask.task_number.split('-')
     nextNumber = Number(parts[1]) + 1
   }
-console.log("done")
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
   const task = await prisma.task.create({
     data: {
@@ -48,7 +47,6 @@ console.log("done")
     }
   });
 
-console.log("done", task)
 NotificationService.createNotification({
   user_id: userId, // who created task
   notification_type: 'TASK_CREATED',
@@ -67,7 +65,6 @@ NotificationService.createNotification({
   send_to_admin: true,
   admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
 })
-console.log("done Notification task", task)
 // 4️⃣ Client approval notification (async)
   if (task.visible_to_client && task.client_approval_required) {
     prisma.project
@@ -254,79 +251,105 @@ const updateTask = async (taskId, data) => {
  * Assign Users to Task
  */
 const assignUsers = async (taskId, userIds, assignedBy) => {
-  if (!Array.isArray(userIds) || userIds.length === 0) {
-    throw new Error('user_ids must be a non-empty array');
-  }
-  const ids = userIds
-    .map((id) => Number(id))
-    .filter((n) => Number.isInteger(n) && n > 0);
+  try {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      throw new Error('user_ids must be a non-empty array');
+    }
 
-  if (ids.length === 0) throw new Error('No valid user IDs provided');
+    const ids = userIds
+      .map((id) => Number(id))
+      .filter((n) => Number.isInteger(n) && n > 0);
 
-  const task = await prisma.task.findUnique({ where: { task_id: taskId } });
-  if (!task) throw new Error('Task not found');
+    if (ids.length === 0) throw new Error('No valid user IDs provided');
 
-  const users = await prisma.user.findMany({
-    where: { user_id: { in: ids } },
-    select: { user_id: true },
-  });
+    /* ---------- Get Task ---------- */
+    const task = await prisma.task.findUnique({
+      where: { task_id: taskId },
+      select: {
+        task_id: true,
+        task_title: true,
+        task_number: true,
+        assigned_to: true,
+      },
+    });
 
-  const foundIds = users.map((u) => u.user_id);
-  const missing = ids.filter((id) => !foundIds.includes(id));
-  if (missing.length > 0) {
-    throw new Error(`Invalid user IDs: ${missing.join(',')}`);
-  }
+    if (!task) throw new Error('Task not found');
 
-  // create task assignments
-  const assignments = foundIds.map((userId) => ({
-    task_id: taskId,
-    user_id: userId,
-    assigned_by: assignedBy,
-  }));
+    /* ---------- Validate Users ---------- */
+    const users = await prisma.user.findMany({
+      where: { user_id: { in: ids } },
+      select: { user_id: true },
+    });
 
-  await prisma.taskAssignment.createMany({
-    data: assignments,
-    skipDuplicates: true,
-  });
+    const foundIds = users.map((u) => u.user_id);
 
-  const currentAssigned = task.assigned_to || []
+    if (foundIds.length === 0) {
+      throw new Error('No valid users found');
+    }
 
-  const updatedAssigned = [
-    ...new Set([...currentAssigned, ...foundIds]),
-  ]
-
-  // update task.assigned_to as JSON array of all assigned users
-  await prisma.task.update({
-    where: { task_id: taskId },
-    data: {
-      assigned_to: updatedAssigned,
-      assigned_date: new Date(),
-    },
-  })
-
-  for (const userId of userIds) {
-    const a = await NotificationService.createNotification({
+    /* ---------- Create Assignments ---------- */
+    const assignments = foundIds.map((userId) => ({
+      task_id: taskId,
       user_id: userId,
-      notification_type: 'TASK_ASSIGNED',
-      title: 'Task Assigned to You',
-      message: `You have been assigned to task "${task.task_title}" (${task.task_number}).`,
-      entity_type: 'TASK',
-      entity_id: task.task_id,
-      action_url: `/applications/tasks`,
-      // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+      assigned_by: assignedBy,
+    }));
 
-      sent_via_email: true,
-      sent_via_push: false,
+    await prisma.taskAssignment.createMany({
+      data: assignments,
+      skipDuplicates: true,
+    });
 
-      // 🔔 also notify admins
-      send_to_admin: true,
-      admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`
-    })
-    console.log("send", a)
+    /* ---------- Update Task ---------- */
+    const currentAssigned = task.assigned_to || [];
+
+    const updatedAssigned = [
+      ...new Set([...currentAssigned, ...foundIds]),
+    ];
+
+    await prisma.task.update({
+      where: { task_id: taskId },
+      data: {
+        assigned_to: updatedAssigned,
+        assigned_date: new Date(),
+      },
+    });
+
+    /* ---------- Background Notifications (FAST) ---------- */
+    Promise.all(
+      foundIds.map((userId) =>
+        NotificationService.createNotification({
+          user_id: userId,
+          notification_type: 'TASK_ASSIGNED',
+          title: 'Task Assigned to You',
+          message: `You have been assigned to task "${task.task_title}" (${task.task_number}).`,
+          entity_type: 'TASK',
+          entity_id: task.task_id,
+          action_url: `/applications/tasks`,
+          sent_via_email: true,
+          sent_via_push: false,
+          send_to_admin: true,
+          admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`,
+        })
+      )
+    )
+      .then(() => console.log("Notifications sent"))
+      .catch((err) => console.error("Notification error:", err));
+
+    /* ---------- Fast Response ---------- */
+    return {
+      success: true,
+      assigned_user_ids: foundIds,
+      message: "Users assigned successfully",
+    };
+
+  } catch (error) {
+    console.error("assignUsers error:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to assign users",
+    };
   }
-
-
-  return { success: true, assigned_user_ids: foundIds };
 };
 
 

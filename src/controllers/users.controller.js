@@ -235,10 +235,8 @@ exports.getUserByToken = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    console.log('Create User Request Body:', req.body)
   const createdBy = req.user.user_id  
   const agencyId = req.user.agency.agency_id
-  console.log('Creating user with created_by:',req.user.agency.agency_id)
   const payload = {
          ...req.body.formData,  
       created_by: createdBy,
