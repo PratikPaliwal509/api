@@ -15,6 +15,7 @@ const taskRoutes = require('./routes/task.routes');
 const notificationRoutes = require('./routes/notification.route');
 const userService = require('./routes/users.routes');
 const hierarchyRoutes = require('./routes/hierarchy')
+const emailRoutes = require('./routes/email.routes');
 app.use(express.json());
 app.use(cors());
 app.use('/api/roles', rolesRoutes);
@@ -38,6 +39,7 @@ app.use('/api/hierarchy', hierarchyRoutes)
 app.use('/api/users', userService);
 
 app.use('/api/timesheet', require('./routes/timesheet.route'))
+app.use('/api/email', emailRoutes);
 app.get("/", (req, res) => {
   res.send("API running");
 });
