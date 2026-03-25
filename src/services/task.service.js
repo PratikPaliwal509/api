@@ -99,17 +99,42 @@ NotificationService.createNotification({
 /**
  * List Tasks (filters)
  */
+
 const getTasks = async (user) => {
   const where = {};
   const scope = user?.role?.permissions?.tasks?.view;
+console.log(user)
   if (!scope) return [];
+
+  const assignedToMe = {
+    assignments: {
+      some: {
+        user_id: user.user_id,
+        is_active: true,
+      },
+    },
+  };
+
+  const assignedByMe = {
+    assignments: {
+      some: {
+        assigned_by: user.user_id,
+        is_active: true,
+      },
+    },
+  };
+
+  const createdByMe = {
+    created_by: user.user_id,
+  };
 
   switch (scope) {
     case 'all':
-      // No restriction
+      // everything
       break;
+
     case 'agency':
-      // No restriction
+      // same as all (as per your requirement)
       break;
 
     case 'team': {
@@ -117,81 +142,79 @@ const getTasks = async (user) => {
 
       if (!teamId) {
         throw new Error('User is not assigned to any team');
-        // or use a custom error class / HTTP error
       }
 
-      where.assignments = {
-        some: {
-          user: { team_id: teamId },
-          is_active: true,
-        },
-      };
-      break;
-    }
-
-
-    case 'client': {
-      // Logged-in user is a client portal user
-      // user.user_id === Client.portal_user_id
-
-      where.project = {
-        client: {
-          portal_user_id: user.user_id,
-        },
-      }
-
-      // Client should only see visible tasks
-      where.visible_to_client = true
-
-      break
-    }
-
-    //Selection method of department
-    //       Task.task_id = 9001
-    // └── Task.project_id = 100
-    //     └── Project.project_id = 100
-    //         └── ProjectMember.project_id = 100
-    //             └── ProjectMember.user_id = 22
-    //                 └── User.department_id = 3
-    //                     └── Logged-in User.department_id = 3
-
-    case 'department':
-      where.project = {
-        projectMembers: {
-          some: {
-            user: {
-              department_id: user.department.department_id,
-            },
-          },
-        },
-      };
-      break;
-
-
-    case 'assigned':
-      where.assignments = {
-        some: {
-          user_id: user.user_id,
-          is_active: true,
-        },
-      };
-      break;
-
-    case 'own':
-      where.created_by = user.user_id;
-      break;
-
-    default:
       where.OR = [
-        { created_by: user.user_id },
+        // tasks assigned to same team
         {
           assignments: {
             some: {
-              user_id: user.user_id,
+              user: { team_id: teamId },
               is_active: true,
             },
           },
         },
+        assignedToMe,
+        assignedByMe,
+        createdByMe,
+      ];
+      break;
+    }
+
+    case 'client':
+      where.AND = [
+        {
+          project: {
+            client: {
+              portal_user_id: user.user_id,
+            },
+          },
+        },
+        {
+          visible_to_client: true,
+        },
+      ];
+      break;
+
+    case 'department':
+      where.OR = [
+        // project linked to same department
+        {
+          project: {
+            projectMembers: {
+              some: {
+                user: {
+                  department_id: user.department_id,
+                },
+              },
+            },
+          },
+        },
+        assignedToMe,
+        assignedByMe,
+        createdByMe,
+      ];
+      break;
+
+    case 'assigned':
+      where.OR = [
+        assignedToMe,
+        assignedByMe,
+      ];
+      break;
+
+    case 'own':
+      where.OR = [
+        createdByMe,
+        assignedToMe,
+        assignedByMe,
+      ];
+      break;
+
+    default:
+      where.OR = [
+        createdByMe,
+        assignedToMe,
       ];
       break;
   }
@@ -201,13 +224,11 @@ const getTasks = async (user) => {
     include: {
       subtasks: true,
       assignments: {
-        // where: { is_active: true },
+        where: { is_active: true },
         include: {
           user: {
             select: {
               user_id: true,
-              first_name: true,
-              last_name: true,
               full_name: true,
             },
           },
