@@ -8,6 +8,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  tls: {
+    rejectUnauthorized: false, // helps in cloud env
+  },
+  connectionTimeout: 10000, 
 })
 
 exports.sendEmail = async ({ to, subject, html }) => {
