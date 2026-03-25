@@ -103,7 +103,6 @@ NotificationService.createNotification({
 const getTasks = async (user) => {
   const where = {};
   const scope = user?.role?.permissions?.tasks?.view;
-console.log(user)
   if (!scope) return [];
 
   const assignedToMe = {
