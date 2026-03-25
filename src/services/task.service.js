@@ -305,7 +305,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
   })
 
   for (const userId of userIds) {
-    await NotificationService.createNotification({
+    const a = await NotificationService.createNotification({
       user_id: userId,
       notification_type: 'TASK_ASSIGNED',
       title: 'Task Assigned to You',
@@ -322,6 +322,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
       send_to_admin: true,
       admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`
     })
+    console.log("send", a)
   }
 
 
