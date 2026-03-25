@@ -15,7 +15,7 @@ const createTask = async (data, userId) => {
     const parts = lastTask.task_number.split('-')
     nextNumber = Number(parts[1]) + 1
   }
-
+console.log("done")
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
   const task = await prisma.task.create({
     data: {
@@ -48,25 +48,27 @@ const createTask = async (data, userId) => {
     }
   });
 
-  NotificationService.createNotification({
-    user_id: userId, // who created task
-    notification_type: 'TASK_CREATED',
-    title: 'New Task Created',
-    message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
-    entity_type: 'TASK',
-    entity_id: task.task_id,
-    action_url: `/applications/tasks`,
-    // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
-
-    // delivery
-    sent_via_email: true,
-    sent_via_push: false,
-
-    // admin config
-    send_to_admin: true,
-    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
-  })
-  // 4️⃣ Client approval notification (async)
+console.log("done", task)
+NotificationService.createNotification({
+  user_id: userId, // who created task
+  notification_type: 'TASK_CREATED',
+  title: 'New Task Created',
+  message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
+  entity_type: 'TASK',
+  entity_id: task.task_id,
+  action_url: `/applications/tasks`,
+  // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+  
+  // delivery
+  sent_via_email: true,
+  sent_via_push: false,
+  
+  // admin config
+  send_to_admin: true,
+  admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
+})
+console.log("done Notification task", task)
+// 4️⃣ Client approval notification (async)
   if (task.visible_to_client && task.client_approval_required) {
     prisma.project
       .findUnique({
@@ -93,6 +95,7 @@ const createTask = async (data, userId) => {
       })
       .catch(console.error);
   }
+  console.log("final task")
   return task;
 };
 
