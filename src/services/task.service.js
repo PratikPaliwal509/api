@@ -4,6 +4,7 @@ const NotificationService = require('../services/notification.service');
  * Create Task / Subtask
  */
 const createTask = async (data, userId) => {
+  console.log("data", data)
   const lastTask = await prisma.task.findFirst({
     where: { project_id: data.project_id },
     orderBy: { task_id: 'desc' },
@@ -41,7 +42,7 @@ const createTask = async (data, userId) => {
       client_approval_required: Boolean(data.client_approval_required),
 
       // approval defaults
-      client_approved: data.client_approval_required ? false : true,
+      // client_approved: data.client_approval_required ? false : true,
       client_approved_at: null,
       client_approved_by: null,
     }
