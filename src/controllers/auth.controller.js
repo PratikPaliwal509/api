@@ -30,7 +30,6 @@ const login = async (req, res, next) => {
 
     return successResponse(res, 'Login successful', result)
   } catch (error) {
-    console.log(error)
      
   let statusCode = 500
   let message = 'Internal Server Error'

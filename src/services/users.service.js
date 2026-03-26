@@ -260,7 +260,6 @@ exports.getUserByTokenService = async (userId) => {
 }
 
 exports.createUser = async (data) => {
-  console.log('Creating user with data:', data);
   const {
     first_name,
     last_name,

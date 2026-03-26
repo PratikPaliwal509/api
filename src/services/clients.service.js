@@ -342,7 +342,7 @@ exports.generateInvoice = async (clientId) => {
   });
 
   const projectIds = projects.map(p => p.project_id);
-console.log("Projects for client:", projectIds);
+
   if (!projectIds.length) {
     throw new Error("No projects found for this client");
   }
@@ -379,7 +379,6 @@ console.log("Projects for client:", projectIds);
   if (!completedProjects.length) {
     throw new Error("No completed projects available for invoicing");
   }
-console.log("Completed projects for invoicing:", completedProjects);
   // 3️⃣ Get tasks of completed projects
   const tasks = await prisma.task.findMany({
     where: {

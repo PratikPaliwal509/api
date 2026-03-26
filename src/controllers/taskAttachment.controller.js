@@ -24,7 +24,6 @@ const getAttachments = async (req, res) => {
 
     return successResponse(res, 'Attachments fetched successfully', attachments);
   } catch (err) {
-    console.log(err)
     return errorResponse(res, err.message);
   }
 };

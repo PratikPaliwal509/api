@@ -23,7 +23,6 @@
 //       html,
 //     })
 
-//     console.log('Email sent:', info.messageId)
 //     return info
 //   } catch (error) {
 //     console.error('Email error:', error)
@@ -55,7 +54,6 @@ exports.sendEmail = async ({ to, subject, html }) => {
 
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log("Email sent:", response);
     return response;
 
   } catch (error) {

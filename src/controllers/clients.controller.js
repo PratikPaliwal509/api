@@ -13,7 +13,6 @@ exports.createClient = async (req, res, next) => {
     const client = await clientsService.createClient(clientData);
     return successResponse(res, 'Client created successfully', client);
   } catch (error) {
-    console.log(error)
     next(error);
   }
 };
@@ -39,7 +38,6 @@ exports.getClientById = async (req, res, next) => {
     const client = await clientsService.getClientById(req.params.id);
     return successResponse(res, 'Client fetched successfully', client);
   } catch (error) {
-    console.log(error)
     next(error);
   }
 };

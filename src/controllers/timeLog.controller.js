@@ -13,7 +13,6 @@ const getActiveTimer = async (req, res) => {
     })
     res.status(200).json(log)
   } catch (error) {
-    console.log(error)
     res.status(500).json({ message: "Failed to fetch active timer" })
   }
 }
@@ -37,7 +36,6 @@ const startTimer = async (req, res) => {
 
     res.status(201).json(log)
   } catch (error) {
-    console.log(error)
     res.status(500).json({ message: "Failed to start timer" })
   }
 }
@@ -109,7 +107,6 @@ const createTimeLog = async (req, res) => {
       201
     )
   } catch (err) {
-    console.log(err)
     return errorResponse(res, err.message)
   }
 }

@@ -58,7 +58,6 @@ exports.createDepartment = async (data) => {
     // ) {
     //   throw new Error('DEPARTMENT_CODE_ALREADY_EXISTS')
     // }
-console.log(error)
     throw error
   }
 }

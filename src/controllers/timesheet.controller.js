@@ -25,7 +25,6 @@ exports.getTeamTimesheet = async (req, res, next) => {
 
     return successResponse(res, 'TEAM_TIMESHEET_FETCHED', timesheet);
   } catch (err) {
-    console.log(err)
     next(err);
   }
 };

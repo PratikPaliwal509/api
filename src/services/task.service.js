@@ -92,7 +92,6 @@ NotificationService.createNotification({
       })
       .catch(console.error);
   }
-  console.log("final task")
   return task;
 };
 
@@ -377,7 +376,6 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
  * Change Task Status
  */
 // const changeStatus = async (taskId, status) => {
-//   console.log(taskId, status)
 //   return prisma.task.update({
 //     where: { task_id: taskId },
 //     data: {
