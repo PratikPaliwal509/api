@@ -110,6 +110,7 @@ const getTasks = async (user) => {
       some: {
         user_id: user.user_id,
         is_active: true,
+         avatar_url: true,
       },
     },
   };
@@ -229,6 +230,7 @@ const getTasks = async (user) => {
             select: {
               user_id: true,
               full_name: true,
+              avatar_url:true
             },
           },
         },
