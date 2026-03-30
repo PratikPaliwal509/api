@@ -48,25 +48,25 @@ const createTask = async (data, userId) => {
     }
   });
 
-NotificationService.createNotification({
-  user_id: userId, // who created task
-  notification_type: 'TASK_CREATED',
-  title: 'New Task Created',
-  message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
-  entity_type: 'TASK',
-  entity_id: task.task_id,
-  action_url: `/applications/tasks`,
-  // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
-  
-  // delivery
-  sent_via_email: true,
-  sent_via_push: false,
-  
-  // admin config
-  send_to_admin: true,
-  admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
-})
-// 4️⃣ Client approval notification (async)
+  NotificationService.createNotification({
+    user_id: userId, // who created task
+    notification_type: 'TASK_CREATED',
+    title: 'New Task Created',
+    message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
+    entity_type: 'TASK',
+    entity_id: task.task_id,
+    action_url: `/applications/tasks`,
+    // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+
+    // delivery
+    sent_via_email: true,
+    sent_via_push: false,
+
+    // admin config
+    send_to_admin: true,
+    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
+  })
+  // 4️⃣ Client approval notification (async)
   if (task.visible_to_client && task.client_approval_required) {
     prisma.project
       .findUnique({
@@ -110,7 +110,11 @@ const getTasks = async (user) => {
       some: {
         user_id: user.user_id,
         is_active: true,
-         avatar_url: true,
+        user: {
+          avatar_url: {
+            not: null
+          }
+        }
       },
     },
   };
@@ -230,7 +234,7 @@ const getTasks = async (user) => {
             select: {
               user_id: true,
               full_name: true,
-              avatar_url:true
+              avatar_url: true
             },
           },
         },
@@ -907,20 +911,20 @@ const changeTaskType = async (taskId, task_type) => {
   })
 }
 
-const  updateTaskTags = async (taskId, tags) => {
-    try {
-        const updatedTask = await prisma.task.update({
-            where: { task_id: taskId },
-            data: {
-                tags: tags   // ✅ String[]
-            }
-        });
+const updateTaskTags = async (taskId, tags) => {
+  try {
+    const updatedTask = await prisma.task.update({
+      where: { task_id: taskId },
+      data: {
+        tags: tags   // ✅ String[]
+      }
+    });
 
-        return updatedTask;
-    } catch (error) {
-        console.error('updateTaskTags service error:', error);
-        throw error;
-    }
+    return updatedTask;
+  } catch (error) {
+    console.error('updateTaskTags service error:', error);
+    throw error;
+  }
 }
 module.exports = {
   createTask,
