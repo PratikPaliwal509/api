@@ -28,6 +28,7 @@ exports.getAllUsers = async () => {
       date_of_joining: true,
       email: true,
       is_active: true,
+      avatar_url: true,
       role: {
         select: {
           role_name: true,
