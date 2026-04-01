@@ -26,6 +26,7 @@ const PROJECT_TYPE_PREFIX_MAP = Object.freeze({
   [PROJECT_TYPES.SOFTWARE]: 'SD',
   [PROJECT_TYPES.CONSULTANCY]: 'CONS',
   [PROJECT_TYPES.HARDWARE]: 'HW',
+  [PROJECT_TYPES.MARKETING]: 'MKT',
 })
 
 const getPrefixFromProjectType = (project_type) => {
@@ -33,7 +34,7 @@ const getPrefixFromProjectType = (project_type) => {
   if (!prefix) {
     throwError(
       'VALIDATION_ERROR',
-      'Invalid project_type. Allowed: Software Development, Consultancy',
+      'Invalid project_type. Allowed: Software Development, Consultancy, Hardware, Marketing',
       'project_type'
     )
   }
