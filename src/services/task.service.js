@@ -227,6 +227,15 @@ const getTasks = async (user) => {
     where,
     include: {
       subtasks: true,
+      project: {
+      select: {
+        project_id: true,
+        project_name: true,
+        project_code: true,
+        status: true,
+        priority: true,
+      },
+    },
       assignments: {
         where: { is_active: true },
         include: {
