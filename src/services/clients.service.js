@@ -282,25 +282,107 @@ exports.deleteClient = async (clientId, userId) => {
   return deletedClient
 }
 
-exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
-  const where = {
-    notes: { not: null }
+exports.fetchClientNotesService = async ({ user_id, role, agency, department, team }) => {
+  // const where = {
+  //   notes: { not: null }
+  // }
+
+  // // 🔥 SUPER ADMIN → ALL NOTES (no filters)
+  // if (role.role_name === "Super Admin") {
+  //   // no additional filters
+  // }
+
+  // // 🔥 ADMIN → AGENCY NOTES
+  // else if (role.role_name === "Admin") {
+  //   where.agency_id = agency.agency_id
+  // }
+
+  // // 🔥 USER / QA / DEVELOPER → OWN NOTES
+  // else {
+  //   where.agency_id = agency.agency_id
+  //   // where.created_by = user_id
+  // }
+
+  // return prisma.client.findMany({
+  //   where,
+  //   select: {
+  //     client_id: true,
+  //     company_name: true,
+  //     notes: true,
+  //     created_at: true,
+  //     updated_at: true,
+  //   },
+  //   orderBy: {
+  //     created_at: "desc",
+  //   },
+  // })
+
+  const scope = role?.permissions?.clients?.view;
+
+  if (!scope) {
+    return [];
   }
 
-  // 🔥 SUPER ADMIN → ALL NOTES (no filters)
-  if (role.role_name === "Super Admin") {
-    // no additional filters
-  }
+  const where = {};
 
-  // 🔥 ADMIN → AGENCY NOTES
-  else if (role.role_name === "Admin") {
-    where.agency_id = agency.agency_id
-  }
+  switch (scope) {
+    case 'all':
+      // no filter
+      break;
 
-  // 🔥 USER / QA / DEVELOPER → OWN NOTES
-  else {
-    where.agency_id = agency.agency_id
-    where.created_by = user_id
+    case 'agency':
+      where.agency_id = agency.agency_id;
+      break;
+
+    case 'department':
+      where.agency_id = agency.agency_id;
+      where.projects = {
+        some: {
+          projectMembers: {
+            some: {
+              user: {
+                teams: {
+                  some: {
+                    department_id: department.department_id
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      break;
+
+
+    case 'team':
+      where.projects = {
+        some: {
+          projectMembers: {
+            some: {
+              user: {
+                teams: {
+                  some: {
+                    team_id: team.team_id
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    case 'assigned':
+      where.agency_id = agency.agency_id;
+      where.account_manager_id = user_id;
+      break;
+
+    case 'own':
+      where.created_by = user_id;
+      break;
+
+    default:
+      return [];
   }
 
   return prisma.client.findMany({
@@ -315,7 +397,7 @@ exports.fetchClientNotesService = async ({ user_id, role, agency }) => {
     orderBy: {
       created_at: "desc",
     },
-  })
+  });
 }
 
 exports.getClientsWithoutNotesService = async (agency_id) => {
