@@ -752,29 +752,109 @@ exports.getAvailableUsersForProject = async (
   });
 };
 
-exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
+exports.fetchProjectNotesService = async ({ user_id, role, agency, department, team }) => {
+  // const where = {
+  //   notes: { not: null }
+  // }
+
+  // // 🔥 SUPER ADMIN → ALL NOTES (no filters)
+  // if (role.role_name === "Super Admin") {
+  //   // no additional filters
+  // }
+
+  // // 🔥 ADMIN → AGENCY NOTES
+  // else if (role.role_name === "Admin") {
+  //   where.agency_id = agency.agency_id
+  // }
+
+  // // 🔥 USER / QA / DEVELOPER → OWN NOTES
+  // else {
+  //   where.agency_id = agency.agency_id
+  //   where.created_by = user_id
+  // }
+
+  // return prisma.project.findMany({
+  //   where,
+  //   select: {
+  //     project_id: true,
+  //     project_name: true,
+  //     notes: true,
+  //     created_at: true,
+  //     updated_at: true,
+  //   },
+  //   orderBy: {
+  //     created_at: "desc",
+  //   },
+  // })
+  const scope = role?.permissions?.projects?.view;
+  if (!scope) return [];
+
   const where = {
-    notes: { not: null }
-  }
+    // agency_id: user.agency_id,
+    // is_active: true
+  };
 
-  // 🔥 SUPER ADMIN → ALL NOTES (no filters)
-  if (role.role_name === "Super Admin") {
-    // no additional filters
-  }
+  switch (scope) {
+    case 'all': break;
 
-  // 🔥 ADMIN → AGENCY NOTES
-  else if (role.role_name === "Admin") {
-    where.agency_id = agency.agency_id
-  }
+    case 'agency':
+      where.agency_id = agency.agency_id;
+      where.is_active = true;
+      // agency filter already applied
+      break;
 
-  // 🔥 USER / QA / DEVELOPER → OWN NOTES
-  else {
-    where.agency_id = agency.agency_id
-    where.created_by = user_id
+    case 'assigned':
+      where.OR = [
+        { project_manager_id: user_id },
+        {
+          projectMembers: {
+            some: {
+              user_id: user_id,
+              is_active: true
+            }
+          }
+        }
+      ];
+      break;
+
+    case 'own':
+      where.created_by = user_id;
+      break;
+
+    case 'team':
+      where.projectMembers = {
+        some: {
+          user: {
+            teams: {
+              some: {
+                team_id: team.team_id
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    case 'department':
+      where.projectMembers = {
+        some: {
+          user: {
+            teams: {
+              some: {
+                department_id: department.department_id
+              }
+            }
+          }
+        }
+      };
+      break;
+
+    default:
+      return [];
   }
 
   return prisma.project.findMany({
-    where,
+     where,
     select: {
       project_id: true,
       project_name: true,
@@ -785,7 +865,7 @@ exports.fetchProjectNotesService = async ({ user_id, role, agency }) => {
     orderBy: {
       created_at: "desc",
     },
-  })
+  });
 }
 
 exports.addProjectNoteService = async ({ project_id, title, notes, userId }) => {
