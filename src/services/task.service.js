@@ -247,6 +247,13 @@ const getTasks = async (user) => {
             },
           },
         },
+        
+      },
+      createdBy: {
+        select: {
+          user_id: true,
+          full_name: true,
+        }
       },
     },
     orderBy: { created_at: 'desc' },
@@ -264,6 +271,12 @@ const getTaskById = async (taskId) => {
       subtasks: true,
       assignments: {
         include: { user: true }
+      },
+       createdBy: {
+        select: {
+          user_id: true,
+          full_name: true,
+        }
       },
       timeLogs: true,
       comments: true,
