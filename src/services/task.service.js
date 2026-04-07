@@ -110,11 +110,11 @@ const getTasks = async (user) => {
       some: {
         user_id: user.user_id,
         is_active: true,
-        user: {
-          avatar_url: {
-            not: null
-          }
-        }
+        // user: {
+        //   avatar_url: {
+        //     not: null
+        //   }
+        // }
       },
     },
   };
@@ -208,6 +208,7 @@ const getTasks = async (user) => {
       break;
 
     case 'own':
+      console.log("Applying 'own' scope filter for user ID:", user.user_id);
       where.OR = [
         createdByMe,
         assignedToMe,
