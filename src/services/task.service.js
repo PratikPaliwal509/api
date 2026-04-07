@@ -223,20 +223,21 @@ const getTasks = async (user) => {
       ];
       break;
   }
-
-  return prisma.task.findMany({
+  //New logic added here for block task and dependant task
+// 🔥 STEP 1: FETCH TASKS 
+  const tasks = await prisma.task.findMany({
     where,
     include: {
       subtasks: true,
       project: {
-      select: {
-        project_id: true,
-        project_name: true,
-        project_code: true,
-        status: true,
-        priority: true,
+        select: {
+          project_id: true,
+          project_name: true,
+          project_code: true,
+          status: true,
+          priority: true,
+        },
       },
-    },
       assignments: {
         where: { is_active: true },
         include: {
@@ -244,36 +245,130 @@ const getTasks = async (user) => {
             select: {
               user_id: true,
               full_name: true,
-              avatar_url: true
+              avatar_url: true,
             },
           },
         },
-        
       },
       createdBy: {
         select: {
           user_id: true,
           full_name: true,
-        }
+        },
       },
     },
     orderBy: { created_at: 'desc' },
   });
+
+  // 🔥 STEP 2: COLLECT ALL IDS
+  const allIds = [
+    ...new Set(
+      tasks.flatMap(t => [
+        ...(t.depends_on || []),
+        ...(t.blocks || []),
+      ])
+    ),
+  ];
+
+  // 🔥 STEP 3: FETCH RELATED TASKS
+  const relatedTasks = await prisma.task.findMany({
+    where: { task_id: { in: allIds } },
+    select: {
+      task_id: true,
+      task_title: true,
+      status: true,
+    },
+  });
+
+  const map = new Map(relatedTasks.map(t => [t.task_id, t]));
+
+  // 🔥 STEP 4: ATTACH TO EACH TASK
+  const finalTasks = tasks.map(task => ({
+    ...task,
+    dependsOnTasks: (task.depends_on || [])
+      .map(id => map.get(id))
+      .filter(Boolean),
+
+    blocksTasks: (task.blocks || [])
+      .map(id => map.get(id))
+      .filter(Boolean),
+  }));
+
+  return finalTasks;
+  
+  //old logic here without block task and dependant task
+  // return1
+  //   where,
+  //   include: {
+  //     subtasks: true,
+  //     project: {
+  //     select: {
+  //       project_id: true,
+  //       project_name: true,
+  //       project_code: true,
+  //       status: true,
+  //       priority: true,
+  //     },
+  //   },
+  //     assignments: {
+  //       where: { is_active: true },
+  //       include: {
+  //         user: {
+  //           select: {
+  //             user_id: true,
+  //             full_name: true,
+  //             avatar_url: true
+  //           },
+  //         },
+  //       },
+        
+  //     },
+  //     createdBy: {
+  //       select: {
+  //         user_id: true,
+  //         full_name: true,
+  //       }
+  //     },
+      
+  //   },
+  //   orderBy: { created_at: 'desc' },
+  // });
 };
 
 
 /**
  * Task Details
  */
+// const getTaskById = async (taskId) => {
+//   return prisma.task.findUnique({
+//     where: { task_id: taskId },
+//     include: {
+//       subtasks: true,
+//       assignments: {
+//         include: { user: true }
+//       },
+//        createdBy: {
+//         select: {
+//           user_id: true,
+//           full_name: true,
+//         }
+//       },
+//       timeLogs: true,
+//       comments: true,
+//       attachments: true
+//     }
+//   });
+// };
+
 const getTaskById = async (taskId) => {
-  return prisma.task.findUnique({
+  const task = await prisma.task.findUnique({
     where: { task_id: taskId },
     include: {
       subtasks: true,
       assignments: {
         include: { user: true }
       },
-       createdBy: {
+      createdBy: {
         select: {
           user_id: true,
           full_name: true,
@@ -284,8 +379,39 @@ const getTaskById = async (taskId) => {
       attachments: true
     }
   });
-};
 
+  if (!task) return null;
+
+  // 🔥 Fetch dependent tasks
+  const dependsOnTasks = await prisma.task.findMany({
+    where: {
+      task_id: { in: task.depends_on || [] }
+    },
+    select: {
+      task_id: true,
+      task_title: true,
+      status: true
+    }
+  });
+
+  // 🔥 Fetch blocked tasks
+  const blocksTasks = await prisma.task.findMany({
+    where: {
+      task_id: { in: task.blocks || [] }
+    },
+    select: {
+      task_id: true,
+      task_title: true,
+      status: true
+    }
+  });
+
+  return {
+    ...task,
+    dependsOnTasks,
+    blocksTasks
+  };
+};
 /**
  * Update Task
  */
