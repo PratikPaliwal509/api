@@ -16,6 +16,7 @@ const createTask = async (data, userId) => {
     const parts = lastTask.task_number.split('-')
     nextNumber = Number(parts[1]) + 1
   }
+  console.log("data.estimated_hours", data.estimated_hours)
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
   const task = await prisma.task.create({
     data: {
@@ -29,7 +30,7 @@ const createTask = async (data, userId) => {
       status: data.status,
       start_date: data.start_date,
       due_date: data.due_date,
-      estimated_hours: data.estimated_hours,
+      estimated_hours: data.estimated_hours ? data.estimated_hours : null,
       is_milestone: data.is_milestone,
       is_billable: data.is_billable,
       created_by: userId,
