@@ -35,7 +35,7 @@ const createTask = async (data, userId) => {
       is_billable: data.is_billable,
       created_by: userId,
       tags: data.labels || [],
-      depends_on: data.depends_on || [],
+      depends_on: data.depends_on || [],  
       blocks: data.blocks || [],
       assigned_to: data.assignees || [],
       // ✅ CLIENT FIELDS

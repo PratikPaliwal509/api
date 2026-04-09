@@ -2,47 +2,6 @@
 const prisma = require('../config/db');
 const { sendEmail } = require('./email.service.js')
 const { getIO } = require('../socket');
-/**
- * Create notification
- */
-// const createNotification = async (data) => {
-//   const userId = data.user_id
-//   const title = data.title
-//   const message = data.message
-//   const notification = await prisma.notification.create({
-//     data: {
-//       user_id: data.user_id,
-//       notification_type: data.notification_type,
-//       title: data.title,
-//       message: data.message,
-//       entity_type: data.entity_type || null,
-//       entity_id: data.entity_id || null,
-//       action_url: data.action_url || null,
-//       sent_via_email: data.sent_via_email || false,
-//       sent_via_push: data.sent_via_push || false
-//     }
-//   })
-//   const sendEmailNotification = true
-//   if (sendEmailNotification) {
-//     const user = await prisma.user.findUnique({
-//       where: { user_id: userId },
-//       // select: { email: true, first_name: true },
-//     })
-//     if (user?.email) {
-//       await sendEmail({
-//         to: user.email,
-//         subject: title,
-//         html: `
-//           <p>Hi ${user.first_name},</p>
-//           <p>${message}</p>
-//         `,
-//       })
-//     }
-//   }
-//   return notification
-// }
-
-
 const createNotification = async (data) => {
   const io = getIO();
 
