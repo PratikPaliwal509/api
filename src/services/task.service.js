@@ -3,91 +3,185 @@ const NotificationService = require('../services/notification.service');
 /**
  * Create Task / Subtask
  */
-const createTask = async (data, userId) => {
-  return await prisma.$transaction(async (tx) => {
+// const createTask = async (data, userId) => {
 
-    const lastTask = await tx.task.findFirst({
-      where: { project_id: data.project_id },
-      orderBy: { task_id: 'desc' },
-      select: { task_number: true },
-    });
+//   return await prisma.$transaction(async (tx) => {
 
-    let nextNumber = 1;
+//     const lastTask = await tx.task.findFirst({
+//       where: { project_id: data.project_id },
+//       orderBy: { task_id: 'desc' },
+//       select: { task_number: true },
+//     });
 
-    if (lastTask?.task_number) {
-      const parts = lastTask.task_number.split('-');
-      nextNumber = Number(parts[1]) + 1;
-    }
+//     let nextNumber = 1;
 
-    const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`;
+//     if (lastTask?.task_number) {
+//       const parts = lastTask.task_number.split('-');
+//       nextNumber = Number(parts[1]) + 1;
+//     }
 
-    /* ---------- 1️⃣ Create Task ---------- */
-    const task = await tx.task.create({
-      data: {
-        project_id: data.project_id,
-        parent_task_id: data.parent_task_id || null,
-        task_title: data.task_title,
-        description: data.description,
-        task_number: taskNumber,
-        task_type: data.task_type,
-        priority: data.priority,
-        status: data.status,
-        start_date: data.start_date,
-        due_date: data.due_date,
-        estimated_hours: data.estimated_hours || null,
-        is_milestone: data.is_milestone,
-        is_billable: data.is_billable,
-        created_by: userId,
-        tags: data.labels || [],
-        depends_on: data.depends_on || [],
-        blocks: data.blocks || [],
-        visible_to_client: Boolean(data.visible_to_client),
-        client_approval_required: Boolean(data.client_approval_required),
-      }
-    });
+//     const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`;
 
-    /* ---------- 2️⃣ Assign Users ---------- */
-    if (Array.isArray(data.assignees) && data.assignees.length > 0) {
+//     /* ---------- 1️⃣ Create Task ---------- */
+//     const task = await tx.task.create({
+//       data: {
+//         project_id: data.project_id,
+//         parent_task_id: data.parent_task_id || null,
+//         task_title: data.task_title,
+//         description: data.description,
+//         task_number: taskNumber,
+//         task_type: data.task_type,
+//         priority: data.priority,
+//         status: data.status,
+//         start_date: data.start_date,
+//         due_date: data.due_date,
+//         estimated_hours: data.estimated_hours || null,
+//         is_milestone: data.is_milestone,
+//         is_billable: data.is_billable,
+//         created_by: userId,
+//         tags: data.labels || [],
+//         depends_on: data.depends_on || [],
+//         blocks: data.blocks || [],
+//         visible_to_client: Boolean(data.visible_to_client),
+//         client_approval_required: Boolean(data.client_approval_required),
+//       }
+//     });
 
-      const assignments = data.assignees.map(userId => ({
-        task_id: task.task_id,
-        user_id: userId,
-        assigned_by: userId,
-      }));
+//     /* ---------- 2️⃣ Assign Users ---------- */
+//     if (Array.isArray(data.assignees) && data.assignees.length > 0) {
 
-      await tx.taskAssignment.createMany({
-        data: assignments,
-        skipDuplicates: true,
-      });
+//       const assignments = data.assignees.map(userId => ({
+//         task_id: task.task_id,
+//         user_id: userId,
+//         assigned_by: userId,
+//       }));
 
-      await tx.task.update({
-        where: { task_id: task.task_id },
-        data: {
-          assigned_to: data.assignees,
-          assigned_date: new Date(),
-        },
-      });
-    }
+//       await tx.taskAssignment.createMany({
+//         data: assignments,
+//         skipDuplicates: true,
+//       });
 
-    /* ---------- 3️⃣ Notifications ---------- */
-    NotificationService.createNotification({
-      user_id: userId,
-      notification_type: 'TASK_CREATED',
-      title: 'New Task Created',
-      message: `Task "${task.task_title}" (${task.task_number}) created.`,
-      entity_type: 'TASK',
-      entity_id: task.task_id,
-      action_url: `/applications/tasks`,
-      sent_via_email: true,
-      send_to_admin: true,
-    });
+//       await tx.task.update({
+//         where: { task_id: task.task_id },
+//         data: {
+//           assigned_to: data.assignees,
+//           assigned_date: new Date(),
+//         },
+//       });
+//     }
 
-    return task;
-  });
-};
+//     /* ---------- 3️⃣ Notifications ---------- */
+//     NotificationService.createNotification({
+//       user_id: userId,
+//       notification_type: 'TASK_CREATED',
+//       title: 'New Task Created',
+//       message: `Task "${task.task_title}" (${task.task_number}) created.`,
+//       entity_type: 'TASK',
+//       entity_id: task.task_id,
+//       action_url: `/applications/tasks`,
+//       sent_via_email: true,
+//       send_to_admin: true,
+//     });
+
+//     return task;
+//   });
+// };
 /**
  * List Tasks (filters)
  */
+const createTask = async (data, userId) => {
+  console.log("data", data)
+  const lastTask = await prisma.task.findFirst({
+    where: { project_id: data.project_id },
+    orderBy: { task_id: 'desc' },
+    select: { task_number: true },
+  })
+  let nextNumber = 1
+
+  if (lastTask?.task_number) {
+    const parts = lastTask.task_number.split('-')
+    nextNumber = Number(parts[1]) + 1
+  }
+  console.log("data.estimated_hours", data.estimated_hours)
+  const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
+  const task = await prisma.task.create({
+    data: {
+      project_id: data.project_id,
+      parent_task_id: data.parent_task_id || null,
+      task_title: data.task_title,
+      description: data.description,
+      task_number: taskNumber,
+      task_type: data.task_type,
+      priority: data.priority,
+      status: data.status,
+      start_date: data.start_date,
+      due_date: data.due_date,
+      estimated_hours: data.estimated_hours ? data.estimated_hours : null,
+      is_milestone: data.is_milestone,
+      is_billable: data.is_billable,
+      created_by: userId,
+      tags: data.labels || [],
+      depends_on: data.depends_on || [],  
+      blocks: data.blocks || [],
+      assigned_to: data.assignees || [],
+      // ✅ CLIENT FIELDS
+      visible_to_client: Boolean(data.visible_to_client),
+      client_approval_required: Boolean(data.client_approval_required),
+
+      // approval defaults
+      // client_approved: data.client_approval_required ? false : true,
+      client_approved_at: null,
+      client_approved_by: null,
+    }
+  });
+
+  NotificationService.createNotification({
+    user_id: userId, // who created task
+    notification_type: 'TASK_CREATED',
+    title: 'New Task Created',
+    message: `Task "${task.task_title}" (${task.task_number}) has been created.`,
+    entity_type: 'TASK',
+    entity_id: task.task_id,
+    action_url: `/applications/tasks`,
+    // action_url: `/projects/${task.project_id}/tasks/${task.task_id}`,
+
+    // delivery
+    sent_via_email: true,
+    sent_via_push: false,
+
+    // admin config
+    send_to_admin: true,
+    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
+  })
+  // 4️⃣ Client approval notification (async)
+  if (task.visible_to_client && task.client_approval_required) {
+    prisma.project
+      .findUnique({
+        where: { project_id: task.project_id },
+        select: {
+          project_name: true,
+          client: { select: { portal_user_id: true } },
+        },
+      })
+      .then((project) => {
+        const portalUserId = project?.client?.portal_user_id;
+        if (portalUserId) {
+          NotificationService.createNotification({
+            user_id: portalUserId,
+            notification_type: 'TASK_APPROVAL_REQUIRED',
+            title: 'Task Approval Required',
+            message: `A task "${task.task_title}" requires your approval in project "${project.project_name}".`,
+            entity_type: 'TASK',
+            entity_id: task.task_id,
+            action_url: `/applications/tasks`,
+            sent_via_email: true,
+          }).catch(console.error);
+        }
+      })
+      .catch(console.error);
+  }
+  return task;
+};
 
 const getTasks = async (user) => {
   const where = {};
