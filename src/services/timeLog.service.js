@@ -6,7 +6,7 @@ const getActiveTimeLog = async ({ taskId, userId }) => {
   return prisma.timeLog.findFirst({
     where: {
       task_id: Number(taskId),
-      // user_id: Number(userId), //Removed for: Admin Approval
+      user_id: Number(userId), //need to Removed for: Admin Approval but for multiple assignee there we need to show them diffrent timer 
     }
   })
 }
