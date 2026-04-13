@@ -38,4 +38,9 @@ router.delete('/time-logs/:id', timeLogController.deleteTimeLog);
 router.post('/:id/approve', authMiddleware, timeLogController.approveTimeLog)
 router.post('/:id/reject', authMiddleware, timeLogController.rejectTimeLog)
 
+router.get(
+  "/:projectId/:taskId",
+  authMiddleware, // your auth middleware
+  timeLogController.getAdminTaskTimeLogsController
+);
 module.exports = router;

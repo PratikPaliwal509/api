@@ -260,14 +260,37 @@ const rejectTimeLog = async (logId) => {
   })
 }
 
+const getTaskTimeLogsAdmin = async ({ taskId, projectId, role }) => {
+  const whereCondition = {
+    task_id: Number(taskId),
+    project_id: Number(projectId),
+  };
+  console.log(role.role_name)
+  // Optional: role-based filtering (if needed later)
+  // For now admin & superadmin can see all logs
+  if (role.role_name !== "Admin" && role.role_name !== "Super Admin") {
+    throw new Error("Unauthorized access");
+  }
+
+  return prisma.timeLog.findMany({
+    where: whereCondition,
+    orderBy: {
+      created_at: "desc",
+    },
+    include: {
+      user: true, // optional (if relation exists)
+    },
+  });
+};
 module.exports = {
   getActiveTimeLog,
   startTimeLog,
-  stopTimeLog,createOrUpdateTimeLog,
+  stopTimeLog, createOrUpdateTimeLog,
   createTimeLog,
   getTimeLogsByTask,
   updateTimeLog,
   deleteTimeLog,
   approveTimeLog,
-  rejectTimeLog
+  rejectTimeLog,
+  getTaskTimeLogsAdmin
 };

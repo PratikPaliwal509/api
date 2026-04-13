@@ -198,6 +198,31 @@ const rejectTimeLog = async (req, res) => {
     })
   }
 }
+
+const getAdminTaskTimeLogsController = async (req, res) => {
+  try {
+    const { taskId, projectId } = req.params;
+    const role = req.user.role; // assuming role comes from auth middleware
+
+    const logs = await timeLogService.getTaskTimeLogsAdmin({
+      taskId,
+      projectId,
+      role,
+    });
+
+    res.status(200).json({
+      success: true,
+      count: logs.length,
+      data: logs,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch timelogs",
+    });
+  }
+};
 module.exports = {
   getActiveTimer,
   startTimer,
@@ -208,5 +233,6 @@ module.exports = {
   updateTimeLog,
   deleteTimeLog,
   approveTimeLog,
-  rejectTimeLog
+  rejectTimeLog,
+  getAdminTaskTimeLogsController
 };
