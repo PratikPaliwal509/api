@@ -94,6 +94,16 @@ router.patch('/:id/type',
   }),
   taskController.changeTaskType
 )
+router.delete('/:id',
+  logActivity({
+    action: 'DELETE TASK',
+    entityType: 'Task',
+    getEntityId: (req) => Number(req.params.id),
+    getEntityName: (req, res, body) => body?.data?.task_title || 'Task',
+    getChanges: (req, res, body) => body?.data || {}
+  }),
+  taskController.deleteTask
+);
 
 router.patch('/:id/tags',
   logActivity({

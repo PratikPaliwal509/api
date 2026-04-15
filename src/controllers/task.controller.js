@@ -272,26 +272,50 @@ const changeTaskType = async (req, res) => {
   }
 }
 
-const changeTaskTags = async(req, res)=> {
-    try {
-        const taskId = Number(req.params.id);
-        const { tags } = req.body;
+const changeTaskTags = async (req, res) => {
+  try {
+    const taskId = Number(req.params.id);
+    const { tags } = req.body;
 
-        const updatedTask = await taskService.updateTaskTags(taskId, tags);
+    const updatedTask = await taskService.updateTaskTags(taskId, tags);
 
-        return res.status(200).json({
-            success: true,
-            message: 'Task tags updated successfully',
-            data: updatedTask
-        });
-    } catch (error) {
-        console.error('changeTaskTags error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to update task tags'
-        });
-    }
+    return res.status(200).json({
+      success: true,
+      message: 'Task tags updated successfully',
+      data: updatedTask
+    });
+  } catch (error) {
+    console.error('changeTaskTags error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update task tags'
+    });
+  }
 }
+
+const deleteTask = async (req, res) => {
+  try {
+    console.log("start")
+    const taskId = Number(req.params.id);
+    const userId = req.user?.user_id; // from auth middleware
+    console.log(req.user)
+    const result = await taskService.deleteTask(taskId, userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Task deleted successfully",
+      data: result
+    });
+
+  } catch (error) {
+    console.error("Delete Task Error:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Failed to delete task"
+    });
+  }
+};
 module.exports = {
   createTask,
   removeAssignment,
@@ -308,5 +332,6 @@ module.exports = {
   approveTask,
   changeTaskType,
   changePriority,
-  changeTaskTags
+  changeTaskTags,
+  deleteTask
 };

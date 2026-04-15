@@ -1,94 +1,8 @@
+const { useId } = require('react');
 const prisma = require('../config/db');
 const NotificationService = require('../services/notification.service');
-/**
- * Create Task / Subtask
- */
-// const createTask = async (data, userId) => {
 
-//   return await prisma.$transaction(async (tx) => {
 
-//     const lastTask = await tx.task.findFirst({
-//       where: { project_id: data.project_id },
-//       orderBy: { task_id: 'desc' },
-//       select: { task_number: true },
-//     });
-
-//     let nextNumber = 1;
-
-//     if (lastTask?.task_number) {
-//       const parts = lastTask.task_number.split('-');
-//       nextNumber = Number(parts[1]) + 1;
-//     }
-
-//     const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`;
-
-//     /* ---------- 1️⃣ Create Task ---------- */
-//     const task = await tx.task.create({
-//       data: {
-//         project_id: data.project_id,
-//         parent_task_id: data.parent_task_id || null,
-//         task_title: data.task_title,
-//         description: data.description,
-//         task_number: taskNumber,
-//         task_type: data.task_type,
-//         priority: data.priority,
-//         status: data.status,
-//         start_date: data.start_date,
-//         due_date: data.due_date,
-//         estimated_hours: data.estimated_hours || null,
-//         is_milestone: data.is_milestone,
-//         is_billable: data.is_billable,
-//         created_by: userId,
-//         tags: data.labels || [],
-//         depends_on: data.depends_on || [],
-//         blocks: data.blocks || [],
-//         visible_to_client: Boolean(data.visible_to_client),
-//         client_approval_required: Boolean(data.client_approval_required),
-//       }
-//     });
-
-//     /* ---------- 2️⃣ Assign Users ---------- */
-//     if (Array.isArray(data.assignees) && data.assignees.length > 0) {
-
-//       const assignments = data.assignees.map(userId => ({
-//         task_id: task.task_id,
-//         user_id: userId,
-//         assigned_by: userId,
-//       }));
-
-//       await tx.taskAssignment.createMany({
-//         data: assignments,
-//         skipDuplicates: true,
-//       });
-
-//       await tx.task.update({
-//         where: { task_id: task.task_id },
-//         data: {
-//           assigned_to: data.assignees,
-//           assigned_date: new Date(),
-//         },
-//       });
-//     }
-
-//     /* ---------- 3️⃣ Notifications ---------- */
-//     NotificationService.createNotification({
-//       user_id: userId,
-//       notification_type: 'TASK_CREATED',
-//       title: 'New Task Created',
-//       message: `Task "${task.task_title}" (${task.task_number}) created.`,
-//       entity_type: 'TASK',
-//       entity_id: task.task_id,
-//       action_url: `/applications/tasks`,
-//       sent_via_email: true,
-//       send_to_admin: true,
-//     });
-
-//     return task;
-//   });
-// };
-/**
- * List Tasks (filters)
- */
 const createTask = async (data, userId) => {
   console.log("data", data)
   const lastTask = await prisma.task.findFirst({
@@ -1158,6 +1072,41 @@ const updateTaskTags = async (taskId, tags) => {
     throw error;
   }
 }
+
+
+const deleteTask = async (taskId, userId) => {
+  try {
+    console.log("userid", userId)
+    // ✅ 1. Find task
+    const task = await prisma.task.findUnique({
+      where: { task_id: Number(taskId) },
+    });
+
+    if (!task) {
+      const err = new Error("Task not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // 🔒 2. Authorization
+    console.log(task.created_by , userId)
+    if (task.created_by !== userId) {
+      const err = new Error("You are not allowed to delete this task");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // ✅ 3. Delete task (Prisma way)
+    await prisma.task.delete({
+      where: { task_id: Number(taskId) },
+    });
+
+    return task;
+
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -1173,6 +1122,7 @@ module.exports = {
   approveTaskByClient,
   changePriority,
   changeTaskType,
-  updateTaskTags
+  updateTaskTags,
+  deleteTask
 
 };
