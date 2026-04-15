@@ -115,4 +115,11 @@ router.patch('/:id/tags',
   }),
   taskController.changeTaskTags
 );
+
+router.patch(
+    "/:id/description",
+    authMiddleware, // remove if not needed
+    taskController.updateTaskDescription
+);
+
 module.exports = router;

@@ -1106,7 +1106,27 @@ const deleteTask = async (taskId, userId) => {
   } catch (error) {
     throw error;
   }
+};const updateTaskDescription = async (taskId, description) => {
+    if (!taskId) throw new Error("Task ID is required");
+
+    const task = await prisma.task.findUnique({
+        where: { task_id: Number(taskId) },
+    });
+
+    if (!task) {
+        throw new Error("Task not found");
+    }
+
+    const updatedTask = await prisma.task.update({
+        where: { task_id: Number(taskId) },
+        data: {
+            description: description,
+        },
+    });
+
+    return updatedTask;
 };
+
 module.exports = {
   createTask,
   removeTaskAssignment,
@@ -1124,5 +1144,5 @@ module.exports = {
   changeTaskType,
   updateTaskTags,
   deleteTask
-
+,updateTaskDescription
 };

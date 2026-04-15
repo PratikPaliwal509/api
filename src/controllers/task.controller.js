@@ -316,6 +316,40 @@ const deleteTask = async (req, res) => {
     });
   }
 };
+
+const updateTaskDescription = async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const { description } = req.body;
+
+        if (!description) {
+            return res.status(400).json({
+                success: false,
+                message: "Description is required",
+            });
+        }
+
+        const updatedTask = await taskService.updateTaskDescription(
+            taskId,
+            description
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Task description updated successfully",
+            data: updatedTask,
+        });
+    } catch (error) {
+      console.log(error)
+        console.error("Update Description Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Internal Server Error",
+        });
+    }
+};
+
 module.exports = {
   createTask,
   removeAssignment,
@@ -333,5 +367,6 @@ module.exports = {
   changeTaskType,
   changePriority,
   changeTaskTags,
-  deleteTask
+  deleteTask,
+  updateTaskDescription
 };
