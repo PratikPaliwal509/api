@@ -13,7 +13,11 @@ exports.createClient = async (req, res, next) => {
     const client = await clientsService.createClient(clientData);
     return successResponse(res, 'Client created successfully', client);
   } catch (error) {
-    next(error);
+    console.log(error)
+     return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create client',
+    });
   }
 };
 

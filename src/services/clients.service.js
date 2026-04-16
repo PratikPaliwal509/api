@@ -5,7 +5,7 @@ exports.createClient = async (data) => {
   const { agency_id, company_name } = data;
 
   if (!agency_id || !company_name) {
-    throw new Error('CLIENT_REQUIRED_FIELDS_MISSING');
+    throw new Error('CLIENT REQUIRED FIELDS MISSING');
   }
 
   const agency = await prisma.agency.findUnique({
@@ -13,7 +13,7 @@ exports.createClient = async (data) => {
   });
 
   if (!agency) {
-    throw new Error('AGENCY_NOT_FOUND');
+    throw new Error('AGENCY NOT FOUND');
   }
 
   const existingClient = await prisma.client.findFirst({
@@ -24,7 +24,7 @@ exports.createClient = async (data) => {
   });
 
   if (existingClient) {
-    throw new Error('CLIENT_ALREADY_EXISTS');
+    throw new Error('CLIENT ALREADY EXISTS');
   }
 
   return prisma.client.create({
