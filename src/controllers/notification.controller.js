@@ -19,18 +19,25 @@ const createNotification = async (req, res) => {
 
 const getMyNotifications = async (req, res) => {
   try {
-    const userId = req.user.user_id
+    const userId = req.user.user_id;
 
-    const notifications = await NotificationService.getUserNotifications(
+    const result = await NotificationService.getUserNotifications(
       userId,
       req.query
-    )
-    res.json({ success: true, data: notifications })
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message })
-  }
-}
+    );
 
+    res.json({
+      success: true,
+      ...result, // ✅ send all pagination data
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 const markNotificationRead = async (req, res) => {
   try {
     const userId = req.user.user_id

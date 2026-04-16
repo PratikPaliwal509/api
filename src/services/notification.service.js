@@ -67,13 +67,13 @@ const createNotification = async (data) => {
     for (const admin of admins) {
       // 📝 choose admin message
       const adminMessage = data.admin_message || data.message;
-
+      const adminTitle = data.admin_title || data.title;
       // Create admin notification
       const adminNotification = await prisma.notification.create({
         data: {
           user_id: admin.user_id,
           notification_type: data.notification_type,
-          title: data.title,
+          title: adminTitle,
           message: adminMessage,
           entity_type: data.entity_type || null,
           entity_id: data.entity_id || null,
@@ -113,19 +113,36 @@ const createNotification = async (data) => {
  * Get notifications for user
  */
 const getUserNotifications = async (userId, options) => {
-  const { page = 1, limit = 20, unreadOnly = false } = options
-  const skip = (page - 1) * limit
+  const { page = 1, limit = 20, unreadOnly = false } = options;
 
-  return prisma.notification.findMany({
-    where: {
-      user_id: userId,
-      ...(unreadOnly && { is_read: false })
-    },
-    orderBy: { created_at: 'desc' },
-    skip,
-    take: limit
-  })
-}
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+  const skip = (pageNum - 1) * limitNum;
+
+  const where = {
+    user_id: userId,
+    ...(unreadOnly && { is_read: false }),
+  };
+
+  // ✅ GET DATA + COUNT
+  const [notifications, total] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: limitNum,
+    }),
+    prisma.notification.count({ where }),
+  ]);
+
+  return {
+    data: notifications,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum),
+  };
+};
 
 /**
  * Mark single notification as read

@@ -35,7 +35,7 @@ const createTask = async (data, userId) => {
       is_billable: data.is_billable,
       created_by: userId,
       tags: data.labels || [],
-      depends_on: data.depends_on || [],  
+      depends_on: data.depends_on || [],
       blocks: data.blocks || [],
       assigned_to: data.assignees || [],
       // ✅ CLIENT FIELDS
@@ -221,7 +221,7 @@ const getTasks = async (user) => {
       break;
   }
   //New logic added here for block task and dependant task
-// 🔥 STEP 1: FETCH TASKS 
+  // 🔥 STEP 1: FETCH TASKS 
   const tasks = await prisma.task.findMany({
     where,
     include: {
@@ -292,7 +292,7 @@ const getTasks = async (user) => {
   }));
 
   return finalTasks;
-  
+
   //old logic here without block task and dependant task
   // return1
   //   where,
@@ -318,7 +318,7 @@ const getTasks = async (user) => {
   //           },
   //         },
   //       },
-        
+
   //     },
   //     createdBy: {
   //       select: {
@@ -326,7 +326,7 @@ const getTasks = async (user) => {
   //         full_name: true,
   //       }
   //     },
-      
+
   //   },
   //   orderBy: { created_at: 'desc' },
   // });
@@ -500,6 +500,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
           sent_via_email: true,
           sent_via_push: false,
           send_to_admin: true,
+          admin_title: 'Task Assignment Update',
           admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`,
         })
       )
@@ -1089,7 +1090,7 @@ const deleteTask = async (taskId, userId) => {
     }
 
     // 🔒 2. Authorization
-    console.log(task.created_by , userId)
+    console.log(task.created_by, userId)
     if (task.created_by !== userId) {
       const err = new Error("You are not allowed to delete this task");
       err.statusCode = 403;
@@ -1106,25 +1107,25 @@ const deleteTask = async (taskId, userId) => {
   } catch (error) {
     throw error;
   }
-};const updateTaskDescription = async (taskId, description) => {
-    if (!taskId) throw new Error("Task ID is required");
+}; const updateTaskDescription = async (taskId, description) => {
+  if (!taskId) throw new Error("Task ID is required");
 
-    const task = await prisma.task.findUnique({
-        where: { task_id: Number(taskId) },
-    });
+  const task = await prisma.task.findUnique({
+    where: { task_id: Number(taskId) },
+  });
 
-    if (!task) {
-        throw new Error("Task not found");
-    }
+  if (!task) {
+    throw new Error("Task not found");
+  }
 
-    const updatedTask = await prisma.task.update({
-        where: { task_id: Number(taskId) },
-        data: {
-            description: description,
-        },
-    });
+  const updatedTask = await prisma.task.update({
+    where: { task_id: Number(taskId) },
+    data: {
+      description: description,
+    },
+  });
 
-    return updatedTask;
+  return updatedTask;
 };
 
 module.exports = {
@@ -1144,5 +1145,5 @@ module.exports = {
   changeTaskType,
   updateTaskTags,
   deleteTask
-,updateTaskDescription
+  , updateTaskDescription
 };
