@@ -85,6 +85,7 @@ exports.updateClient = async (req, res, next) => {
     );
     return successResponse(res, 'Client updated successfully', client);
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };

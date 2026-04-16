@@ -222,13 +222,18 @@ exports.getAllClients = async (agency_id) => {
 }
 // UPDATE CLIENT
 exports.updateClient = async (id, data) => {
+  console.log(data)
+  console.log(data.account_manager_id !== undefined && data.account_manager_id !== '')
   await exports.getClientById(id);
   return prisma.client.update({
     where: { client_id: Number(id) },
     data: {
       ...data,
-      account_manager_id: data.account_manager_id !== undefined ? Number(data.account_manager_id) : null,
-      portal_user_id: data.portal_user_id !== undefined ? Number(data.portal_user_id) : null,
+      account_manager_id:
+        data.account_manager_id !== undefined && data.account_manager_id !== ''
+          ? Number(data.account_manager_id)
+          : null,
+      portal_user_id: data.portal_user_id !== undefined  && data.portal_user_id !== ''? Number(data.portal_user_id) : null,
     }
   });
 };
