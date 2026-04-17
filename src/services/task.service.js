@@ -1,8 +1,92 @@
-const { useId } = require('react');
 const prisma = require('../config/db');
 const NotificationService = require('../services/notification.service');
+async function updateTaskProgress(taskId) {
+  const task = await prisma.task.findUnique({
+    where: { task_id: taskId },
+    include: { subtasks: true }
+  });
 
+  if (!task) return;
 
+  let progress = 0;
+
+  // ✅ Case 1: Has subtasks
+  if (task.subtasks.length > 0) {
+    const total = task.subtasks.length;
+
+    const completed = task.subtasks.filter(
+      t => t.status === "completed"
+    ).length;
+
+    progress = Math.round((completed / total) * 100);
+  } else {
+    // ✅ Case 2: fallback to status
+    const statusMap = {
+      "to_do": 0,
+      "pending": 10,
+      "inprogress": 50,
+      // "review": 80,        // keep if you use it later
+      "completed": 100,
+      "rejected": 0
+    };
+
+    progress = statusMap[task.status] || 0;
+  }
+
+  await prisma.task.update({
+    where: { task_id: taskId },
+    data: { progress_percentage: progress }
+  });
+
+  return progress;
+}
+async function updateProjectProgress(projectId) {
+  const tasks = await prisma.task.findMany({
+    where: {
+      project_id: projectId,
+      parent_task_id: null // 👈 only main tasks
+    },
+    select: {
+      progress_percentage: true
+    }
+  });
+
+  if (tasks.length === 0) {
+    await prisma.project.update({
+      where: { project_id: projectId },
+      data: { progress_percentage: 0 }
+    });
+    return;
+  }
+
+  const total = tasks.length;
+
+  // const sum = tasks.reduce(
+  //   (acc, task) => acc + (task.progress_percentage || 0),
+  //   0
+  // );
+
+  // const progress = Math.round(sum / total);
+  const sum = tasks.reduce(
+  (acc, task) =>
+    acc + ((task.progress_percentage || 0) * (task.estimated_hours || 1)),
+  0
+);
+
+const totalWeight = tasks.reduce(
+  (acc, task) => acc + (task.estimated_hours || 1),
+  0
+);
+
+const progress = Math.round(sum / totalWeight);
+
+  await prisma.project.update({
+    where: { project_id: projectId },
+    data: { progress_percentage: progress }
+  });
+
+  return progress;
+}
 const createTask = async (data, userId) => {
   console.log("data", data)
   const lastTask = await prisma.task.findFirst({
@@ -48,6 +132,13 @@ const createTask = async (data, userId) => {
       client_approved_by: null,
     }
   });
+  // 🔥 after task creation
+  if (data.parent_task_id) {
+    await updateTaskProgress(data.parent_task_id);
+  }
+
+  // 🔥 ADD THIS
+  await updateProjectProgress(task.project_id);
 
   NotificationService.createNotification({
     user_id: userId, // who created task
@@ -413,10 +504,19 @@ const getTaskById = async (taskId) => {
  * Update Task
  */
 const updateTask = async (taskId, data) => {
-  return prisma.task.update({
+  const task = prisma.task.update({
     where: { task_id: taskId },
     data
   });
+   await updateTaskProgress(taskId);
+
+  if (task.parent_task_id) {
+    await updateTaskProgress(task.parent_task_id);
+  }
+
+  await updateProjectProgress(task.project_id); // 🔥 ADD THIS
+
+  return task;
 };
 
 /**
@@ -544,11 +644,12 @@ const changeStatus = async (taskId, status) => {
     where: { task_id: taskId },
     select: {
       task_id: true,
+      parent_task_id: true,
       task_title: true,
       status: true,
+      project_id: true,
       depends_on: true,
       blocks: true,
-      project_id: true
     }
   });
 
@@ -622,7 +723,15 @@ const changeStatus = async (taskId, status) => {
       completed_at: status === 'completed' ? new Date() : null
     }
   });
-
+ // 🔥 1. Update task progress 
+  await updateTaskProgress(taskId);
+  
+  // 🔥 2. Update parent task if subtask
+  if (task.parent_task_id) {
+    await updateTaskProgress(task.parent_task_id);
+  }
+  // 🔥 3. UPDATE PROJECT PROGRESS (MISSING PART)
+  await updateProjectProgress(task.project_id);
   return updatedTask;
 };
 
@@ -1101,7 +1210,12 @@ const deleteTask = async (taskId, userId) => {
     await prisma.task.delete({
       where: { task_id: Number(taskId) },
     });
+    // 🔥 ADD THIS
+    if (task.parent_task_id) {
+      await updateTaskProgress(task.parent_task_id);
+    }
 
+await updateProjectProgress(task.project_id);
     return task;
 
   } catch (error) {
