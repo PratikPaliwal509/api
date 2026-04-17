@@ -1041,6 +1041,7 @@ const getProjectTasks = async (projectId) => {
         priority: true,
         status: true,
         progress_percentage: true,
+        estimated_hours: true,
         start_date: true,
         due_date: true,
         completed_at: true,
