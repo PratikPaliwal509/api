@@ -15,6 +15,7 @@ router.post('/', authMiddleware, logActivity({
   }), teamsController.createTeam);
 
 // List teams (filters: agency_id, department_id)
+router.get('/progress', authMiddleware, teamsController.getTeamsProgress);
 router.get('/', authMiddleware, teamsController.getTeams);
 
 // Team details

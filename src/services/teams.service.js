@@ -250,7 +250,106 @@ return teams.map(team => {
   // }))
 }
 
+exports.getTeamsProgress = async (user) => {
+  const scope = user?.role?.permissions?.teams?.view;
+  if (!scope) return [];
 
+  const where = {};
+
+  switch (scope) {
+    case "all":
+      break;
+
+    case "agency":
+      where.agency_id = user.agency_id;
+      break;
+
+    case "department":
+      where.department_id = user.department_id;
+      break;
+
+    case "own":
+      where.team_lead_id = user.user_id;
+      break;
+
+    case "team":
+      where.team_id = user.team_id;
+      break;
+
+    default:
+      return [];
+  }
+
+  // ---------------- TEAM ----------------
+  const teams = await prisma.team.findMany({
+    where,
+    include: {
+      department: true,
+      team_lead: true,
+    },
+  });
+
+  const teamIds = teams.map(t => t.team_id);
+
+  // ---------------- USERS ----------------
+  const users = await prisma.user.findMany({
+    where: {
+      team_id: { in: teamIds },
+      is_active: true,
+    },
+  });
+
+  const userIds = users.map(u => u.user_id);
+
+  // ---------------- TASKS (IMPORTANT FIX) ----------------
+  const tasks = await prisma.task.findMany({
+    where: {
+      created_by: { in: userIds }, // or assigned_to relation if you have
+    },
+  });
+
+  // ---------------- MERGE ----------------
+  return teams.map(team => {
+    const teamUsers = users.filter(u => u.team_id === team.team_id);
+
+    const teamTasks = tasks.filter(t =>
+      teamUsers.some(u => u.user_id === t.created_by)
+    );
+
+    // ---------------- PROGRESS ----------------
+    const totalTasks = teamTasks.length;
+
+    const completedTasks = teamTasks.filter(
+      t => t.status === "completed"
+    ).length;
+
+    const avgProgress = totalTasks
+      ? Math.round(
+          teamTasks.reduce(
+            (sum, t) => sum + (t.progress_percentage || 0),
+            0
+          ) / totalTasks
+        )
+      : 0;
+
+    const completionRate = totalTasks
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
+
+    return {
+      ...team,
+      members: teamUsers,
+      tasks: teamTasks,
+
+      analytics: {
+        total_tasks: totalTasks,
+        completed_tasks: completedTasks,
+        avg_progress: avgProgress,
+        completion_rate: completionRate,
+      },
+    };
+  });
+};
 // TEAM DETAILS
 exports.getTeamById = async (id) => {
   const teamId = Number(id);
