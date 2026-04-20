@@ -1,5 +1,12 @@
 const prisma = require('../config/db');
 
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
 // Helper to convert BigInt to string for JSON serialization
 const formatAttachment = (attachment) => ({
   ...attachment,
@@ -36,15 +43,40 @@ const getAttachmentsByTask = async (taskId) => {
   return attachments.map(formatAttachment);
 };
 
+
 const deleteAttachment = async (attachmentId, userId) => {
+  // 1️⃣ Get attachment
+  const existingAttachment = await prisma.taskAttachment.findUnique({
+    where: { attachment_id: attachmentId },
+  });
+
+  if (!existingAttachment) {
+    throw new Error("Attachment not found");
+  }
+  console.log(existingAttachment.file_path, existingAttachment.file_type)
+  // 2️⃣ Delete from Cloudinary
+  if (existingAttachment.file_path) {
+    try {
+      await cloudinary.uploader.destroy(existingAttachment.file_path, {
+        resource_type: existingAttachment.file_type || "image",// ✅ important for all file types
+      });
+    } catch (err) {
+      console.log("Cloudinary delete failed:", err.message);
+      console.error("Cloudinary delete failed:", err.message);
+      // don't block DB delete
+    }
+  }
+
+  // 3️⃣ Soft delete in DB
   const attachment = await prisma.taskAttachment.update({
     where: { attachment_id: attachmentId },
     data: {
       is_deleted: true,
       deleted_at: new Date(),
-      deleted_by: userId
-    }
+      deleted_by: userId,
+    },
   });
+
   return formatAttachment(attachment);
 };
 
