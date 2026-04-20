@@ -232,14 +232,14 @@ exports.getProjectsByScope = async (user) => {
     include: {
       client: true,
       manager: true,
-      tasks:true
+      tasks: true
     }
   });
 };
 
 
 /* ---------------- GET PROJECT BY ID ---------------- */
-exports.getProjectById = async (projectId, userId, agencyId) => {
+exports.getProjectById = async (projectId, userId, agencyId, user) => {  // ✅ accept user param
   if (!isValidNumber(projectId)) {
     throwError('VALIDATION_ERROR', 'Invalid project ID', 'project_id');
   }
@@ -254,15 +254,9 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
               user_id: true,
               full_name: true,
               email: true,
-
             }
           }
         }
-      },
-      tasks: {
-        include: {
-          timeLogs: true, // include time logs per task
-        },
       },
       client: {
         select: {
@@ -280,19 +274,19 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
           portal_user: {
             select: {
               user_id: true,
-              full_name: true, // ✅ CLIENT DISPLAY NAME
+              full_name: true,
               email: true,
             },
           },
         },
       },
-
     }
+    // ✅ tasks are NO longer fetched here — handled separately below
   });
 
   if (!project) throwError('NOT_FOUND', 'Project not found');
-  // Access rules: allow if same agency, or the requesting user is project manager,
-  // the creator, or is a project member.
+
+  // Access rules
   const isSameAgency = project.agency_id === agencyId;
   const isManager = project.project_manager_id === userId;
   const isCreator = project.created_by === userId;
@@ -302,25 +296,157 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
     throwError('FORBIDDEN', 'You do not have access to this project');
   }
 
-  // ⏱️ TIME SUMMARY (SOURCE OF TRUTH)
+  // ─────────────────────────────────────────────────────────────
+  // 🔐 ROLE-BASED TASK SCOPE FILTER (scoped to this project)
+  // ─────────────────────────────────────────────────────────────
+  const scope = user?.role?.permissions?.tasks?.view;
+console.log(scope)
+  // Always pin tasks to this project
+  const taskWhere = { project_id: projectId };
 
-  // Helper to convert minutes to HH:MM
+  if (!scope) {
+    // No permission — return project with empty tasks
+    project.tasks = [];
+    project.time_summary = {
+      currency: project.budget_currency || 'USD',
+      actual_hours: '00:00',
+      billable_hours: '00:00',
+      billable_amount: '0.00',
+      billed_hours: '00:00',
+      billed_amount: '0.00',
+      unbilled_hours: '00:00',
+      unbilled_amount: '0.00',
+    };
+    return project;
+  }
+
+  const assignedToMe = {
+    assignments: {
+      some: { user_id: user.user_id, is_active: true },
+    },
+  };
+
+  const assignedByMe = {
+    assignments: {
+      some: { assigned_by: user.user_id, is_active: true },
+    },
+  };
+
+  const createdByMe = { created_by: user.user_id };
+
+  switch (scope) {
+    case 'all':
+    case 'agency':
+      // No extra filter — all tasks in this project
+      break;
+
+    case 'team': {
+      const teamId = user?.team?.team_id;
+      if (!teamId) throwError('VALIDATION_ERROR', 'User is not assigned to any team');
+
+      taskWhere.OR = [
+        {
+          assignments: {
+            some: {
+              user: { team_id: teamId },
+              is_active: true,
+            },
+          },
+        },
+        assignedToMe,
+        assignedByMe,
+        createdByMe,
+      ];
+      break;
+    }
+
+    case 'client':
+      // Client can only see tasks marked visible + belonging to their client account
+      taskWhere.AND = [
+        {
+          project: {
+            client: { portal_user_id: user.user_id },
+          },
+        },
+        { visible_to_client: true },
+      ];
+      break;
+
+    case 'department':
+      taskWhere.OR = [
+        {
+          project: {
+            projectMembers: {
+              some: {
+                user: { department_id: user.department_id },
+              },
+            },
+          },
+        },
+        assignedToMe,
+        assignedByMe,
+        createdByMe,
+      ];
+      break;
+
+    case 'assigned':
+      taskWhere.OR = [assignedToMe, assignedByMe];
+      break;
+
+    case 'own':
+      taskWhere.OR = [createdByMe, assignedToMe, assignedByMe];
+      break;
+
+    default:
+      taskWhere.OR = [createdByMe, assignedToMe];
+      break;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 📋 FETCH TASKS WITH SCOPE APPLIED
+  // ─────────────────────────────────────────────────────────────
+  const tasks = await prisma.task.findMany({
+    where: taskWhere,
+    include: {
+      subtasks: true,
+      timeLogs: true,
+      assignments: {
+        where: { is_active: true },
+        include: {
+          user: {
+            select: {
+              user_id: true,
+              full_name: true,
+              avatar_url: true,
+            },
+          },
+        },
+      },
+      createdBy: {
+        select: {
+          user_id: true,
+          full_name: true,
+        },
+      },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // ⏱️ TIME SUMMARY
+  // ─────────────────────────────────────────────────────────────
   const toHHMM = (minutes = 0) => {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  // Flatten all time logs from all tasks
-  const allLogs = project.tasks.flatMap((task) => task.timeLogs);
+  const allLogs = tasks.flatMap((task) => task.timeLogs);
 
-  let totalBillableMinutes = 0;
-  let totalBillableAmount = 0;
-  let totalBilledMinutes = 0;
-  let totalBilledAmount = 0;
-  let totalUnbilledMinutes = 0;
-  let totalUnbilledAmount = 0;
-  let totalActualMinutes = 0; // sum of all time logs, billable or not
+  let totalBillableMinutes = 0, totalBillableAmount = 0;
+  let totalBilledMinutes = 0,   totalBilledAmount = 0;
+  let totalUnbilledMinutes = 0, totalUnbilledAmount = 0;
+  let totalActualMinutes = 0;
 
   allLogs.forEach((log) => {
     const minutes = log.duration_minutes || 0;
@@ -343,35 +469,57 @@ exports.getProjectById = async (projectId, userId, agencyId) => {
 
   project.time_summary = {
     currency: project.budget_currency || 'USD',
-    actual_hours: toHHMM(totalActualMinutes),
-    billable_hours: toHHMM(totalBillableMinutes),
+    actual_hours:    toHHMM(totalActualMinutes),
+    billable_hours:  toHHMM(totalBillableMinutes),
     billable_amount: totalBillableAmount.toFixed(2),
-    billed_hours: toHHMM(totalBilledMinutes),
-    billed_amount: totalBilledAmount.toFixed(2),
-    unbilled_hours: toHHMM(totalUnbilledMinutes),
+    billed_hours:    toHHMM(totalBilledMinutes),
+    billed_amount:   totalBilledAmount.toFixed(2),
+    unbilled_hours:  toHHMM(totalUnbilledMinutes),
     unbilled_amount: totalUnbilledAmount.toFixed(2),
   };
 
-  // 🎨 Priority Color Mapping
-const priorityMap = {
-  High: { bg: 'danger', text: 'white' },
-  Urgent: { bg: 'danger', text: 'white' },
-  Medium: { bg: 'warning', text: 'dark' },
-  Normal: { bg: 'primary', text: 'white' },
-  Low: { bg: 'success', text: 'white' },
-};
+  // ─────────────────────────────────────────────────────────────
+  // 🔗 DEPENDS_ON / BLOCKS RESOLUTION
+  // ─────────────────────────────────────────────────────────────
+  const allRelatedIds = [
+    ...new Set(
+      tasks.flatMap((t) => [
+        ...(t.depends_on || []),
+        ...(t.blocks || []),
+      ])
+    ),
+  ];
 
-// Attach colors to each task
-project.tasks = project.tasks.map(task => ({
-  ...task,
-  priorityBgColor: priorityMap[task.priority]?.bg || 'secondary',
-  priorityColor: priorityMap[task.priority]?.text || 'white',
-}));
+  const relatedTasks = allRelatedIds.length > 0
+    ? await prisma.task.findMany({
+        where: { task_id: { in: allRelatedIds } },
+        select: { task_id: true, task_title: true, status: true },
+      })
+    : [];
 
+  const relatedTaskMap = new Map(relatedTasks.map((t) => [t.task_id, t]));
+
+  // ─────────────────────────────────────────────────────────────
+  // 🎨 ENRICH TASKS (priority colors + depends/blocks)
+  // ─────────────────────────────────────────────────────────────
+  const priorityMap = {
+    High:   { bg: 'danger',  text: 'white' },
+    Urgent: { bg: 'danger',  text: 'white' },
+    Medium: { bg: 'warning', text: 'dark'  },
+    Normal: { bg: 'primary', text: 'white' },
+    Low:    { bg: 'success', text: 'white' },
+  };
+
+  project.tasks = tasks.map((task) => ({
+    ...task,
+    priorityBgColor:  priorityMap[task.priority]?.bg   || 'secondary',
+    priorityColor:    priorityMap[task.priority]?.text  || 'white',
+    dependsOnTasks:  (task.depends_on || []).map((id) => relatedTaskMap.get(id)).filter(Boolean),
+    blocksTasks:     (task.blocks     || []).map((id) => relatedTaskMap.get(id)).filter(Boolean),
+  }));
 
   return project;
 };
-
 //Pratik Testing continued
 /* ---------------- UPDATE PROJECT ---------------- */
 exports.updateProject = async (projectId, data, userId) => {
@@ -854,7 +1002,7 @@ exports.fetchProjectNotesService = async ({ user_id, role, agency, department, t
   }
 
   return prisma.project.findMany({
-     where,
+    where,
     select: {
       project_id: true,
       project_name: true,

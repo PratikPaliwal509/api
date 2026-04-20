@@ -33,10 +33,12 @@ exports.getProjects = async (req, res, next) => {
 // ---------------- PROJECT DETAILS ----------------
 exports.getProjectById = async (req, res, next) => {
   try {
+    console.log(req.user)
     const project = await projectService.getProjectById(
       Number(req.params.id),
       req.user.user_id,
-      req.user.agency.agency_id
+      req.user.agency.agency_id,
+      req.user
     );
     return successResponse(res, 'PROJECT_FETCHED', project);
   } catch (err) {
