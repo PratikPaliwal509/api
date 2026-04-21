@@ -759,24 +759,113 @@ const getSubtasksByTaskId = async (taskId) => {
   });
 };
 
-const addChecklistToTask = async (taskId, checklist) => {
-  // Ensure task exists
-  const task = await prisma.task.findUnique({
-    where: { task_id: taskId }
-  })
+const addChecklistToTask = async (taskId, checklist, loggedInUserId) => {
+  try {
+    console.log("start adding...");
 
-  if (!task) {
-    throw new Error('Task not found')
-  }
+    /* ---------- Get Task with required fields ---------- */
+    const task = await prisma.task.findUnique({
+      where: { task_id: taskId },
+      select: {
+        task_id: true,
+        task_title: true,
+        assigned_to: true,
+        created_by: true,
+        project: {
+          select: {
+            project_id: true,
+            // 👇 change this field based on your schema
+            created_by: true   // or project_manager_id
+          }
+        }
+      }
+    });
 
-  // Update checklist JSON
-  return prisma.task.update({
-    where: { task_id: taskId },
-    data: {
-      checklist
+    if (!task) {
+      throw new Error("Task not found");
     }
-  })
-}
+
+    /* ---------- Update checklist ---------- */
+    const updatedTask = await prisma.task.update({
+      where: { task_id: taskId },
+      data: { checklist }
+    });
+
+    /* ---------- Collect ALL user IDs ---------- */
+    const assignedUsers = task.assigned_to || [];
+    const creator = task.created_by ? [task.created_by] : [];
+    const projectManager = task.project?.created_by
+      ? [task.project.created_by]
+      : [];
+
+    // 🔥 Merge + remove duplicates
+    let notifyUserIds = [
+      ...assignedUsers,
+      ...creator,
+      ...projectManager
+    ];
+
+    notifyUserIds = [...new Set(notifyUserIds)];
+
+    // ❌ remove logged-in user (no self notification)
+    notifyUserIds = notifyUserIds.filter(
+      (id) => id !== loggedInUserId
+    );
+
+    if (notifyUserIds.length === 0) {
+      return {
+        success: true,
+        message: "Checklist added (no users to notify)"
+      };
+    }
+
+    /* ---------- Fetch user names ---------- */
+    const users = await prisma.user.findMany({
+      where: {
+        user_id: { in: notifyUserIds }
+      },
+      select: {
+        user_id: true,
+        full_name: true
+      }
+    });
+
+    /* ---------- Send Notifications ---------- */
+    Promise.all(
+      users.map((user) =>
+        NotificationService.createNotification({
+          user_id: user.user_id,
+          notification_type: "CHECKLIST_ADDED",
+          title: "Checklist Updated",
+          message: `Checklist updated in task "${task.task_title}".`,
+          entity_type: "TASK",
+          entity_id: task.task_id,
+          action_url: `/applications/tasks`,
+          sent_via_email: true,
+          sent_via_push: false,
+          send_to_admin: false
+        })
+      )
+    )
+      .then(() => console.log("Checklist notifications sent"))
+      .catch((err) => console.error("Notification error:", err));
+
+    /* ---------- Response ---------- */
+    return {
+      success: true,
+      notified_users: users,
+      message: "Checklist added & notifications sent"
+    };
+
+  } catch (error) {
+    console.error("addChecklistToTask error:", error);
+
+    return {
+      success: false,
+      message: error.message || "Failed to add checklist"
+    };
+  }
+};
 
 // Need to add logic to check preiously added users not assign again same task it is giving error 
 const removeTaskAssignment = async ({
