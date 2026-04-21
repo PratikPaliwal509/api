@@ -68,17 +68,17 @@ async function updateProjectProgress(projectId) {
 
   // const progress = Math.round(sum / total);
   const sum = tasks.reduce(
-  (acc, task) =>
-    acc + ((task.progress_percentage || 0) * (task.estimated_hours || 1)),
-  0
-);
+    (acc, task) =>
+      acc + ((task.progress_percentage || 0) * (task.estimated_hours || 1)),
+    0
+  );
 
-const totalWeight = tasks.reduce(
-  (acc, task) => acc + (task.estimated_hours || 1),
-  0
-);
+  const totalWeight = tasks.reduce(
+    (acc, task) => acc + (task.estimated_hours || 1),
+    0
+  );
 
-const progress = Math.round(sum / totalWeight);
+  const progress = Math.round(sum / totalWeight);
 
   await prisma.project.update({
     where: { project_id: projectId },
@@ -130,6 +130,14 @@ const createTask = async (data, userId) => {
       // client_approved: data.client_approval_required ? false : true,
       client_approved_at: null,
       client_approved_by: null,
+    },
+    include: {
+      project: {
+        select: {
+          project_id: true,
+          project_name: true   // 👈 change based on your schema
+        }
+      }
     }
   });
   // 🔥 after task creation
@@ -139,7 +147,7 @@ const createTask = async (data, userId) => {
 
   // 🔥 ADD THIS
   await updateProjectProgress(task.project_id);
-
+  console.log(task)
   NotificationService.createNotification({
     user_id: userId, // who created task
     notification_type: 'TASK_CREATED',
@@ -156,7 +164,7 @@ const createTask = async (data, userId) => {
 
     // admin config
     send_to_admin: true,
-    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ID ${task.project_id}`
+    admin_message: `New task created: "${task.task_title}" (${task.task_number}) in project ${task.project.project_name}`
   })
   // 4️⃣ Client approval notification (async)
   if (task.visible_to_client && task.client_approval_required) {
@@ -508,7 +516,7 @@ const updateTask = async (taskId, data) => {
     where: { task_id: taskId },
     data
   });
-   await updateTaskProgress(taskId);
+  await updateTaskProgress(taskId);
 
   if (task.parent_task_id) {
     await updateTaskProgress(task.parent_task_id);
@@ -542,17 +550,17 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
         task_title: true,
         task_number: true,
         assigned_to: true,
-      },
+      }
     });
-
+    console.log(task)
     if (!task) throw new Error('Task not found');
 
     /* ---------- Validate Users ---------- */
     const users = await prisma.user.findMany({
       where: { user_id: { in: ids } },
-      select: { user_id: true },
+      select: { user_id: true,full_name: true  },
     });
-
+    console.log(users)
     const foundIds = users.map((u) => u.user_id);
 
     if (foundIds.length === 0) {
@@ -585,12 +593,12 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
         assigned_date: new Date(),
       },
     });
-
+    console.log(foundIds)
     /* ---------- Background Notifications (FAST) ---------- */
     Promise.all(
-      foundIds.map((userId) =>
+      users.map((user) => 
         NotificationService.createNotification({
-          user_id: userId,
+          user_id: user.user_id,
           notification_type: 'TASK_ASSIGNED',
           title: 'Task Assigned to You',
           message: `You have been assigned to task "${task.task_title}" (${task.task_number}).`,
@@ -601,7 +609,7 @@ const assignUsers = async (taskId, userIds, assignedBy) => {
           sent_via_push: false,
           send_to_admin: true,
           admin_title: 'Task Assignment Update',
-          admin_message: `User ID ${userId} was assigned to task "${task.task_title}" (${task.task_number}).`,
+          admin_message: `User ${user.full_name} was assigned to task "${task.task_title}" (${task.task_number}).`,
         })
       )
     )
@@ -723,9 +731,9 @@ const changeStatus = async (taskId, status) => {
       completed_at: status === 'completed' ? new Date() : null
     }
   });
- // 🔥 1. Update task progress 
+  // 🔥 1. Update task progress 
   await updateTaskProgress(taskId);
-  
+
   // 🔥 2. Update parent task if subtask
   if (task.parent_task_id) {
     await updateTaskProgress(task.parent_task_id);
@@ -1216,7 +1224,7 @@ const deleteTask = async (taskId, userId) => {
       await updateTaskProgress(task.parent_task_id);
     }
 
-await updateProjectProgress(task.project_id);
+    await updateProjectProgress(task.project_id);
     return task;
 
   } catch (error) {
