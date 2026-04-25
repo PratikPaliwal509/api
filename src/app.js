@@ -16,12 +16,15 @@ const notificationRoutes = require('./routes/notification.route');
 const userService = require('./routes/users.routes');
 const hierarchyRoutes = require('./routes/hierarchy')
 const emailRoutes = require('./routes/email.routes');
+
+const aiRoutes = require("./routes/ai.routes");
 app.use(express.json());
 app.use(cors());
 app.use('/api/roles', rolesRoutes);
 app.use('/api/agencies', agenciesRoutes);
 app.use('/api/auth', authRoutes);
 
+app.use("/api/ai", aiRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/clients', clientsRoutes);
 app.use('/api/teams', teamsRoutes);

@@ -2,6 +2,7 @@ const prisma = require('../config/db');
 
 // CREATE CLIENT
 exports.createClient = async (data) => {
+  console.log("Creating client with data:", data);
   const { agency_id, company_name } = data;
 
   if (!agency_id || !company_name) {
