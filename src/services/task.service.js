@@ -1284,42 +1284,50 @@ const updateTaskTags = async (taskId, tags) => {
 
 const deleteTask = async (taskId, userId) => {
   try {
-    console.log("userid", userId)
-    // ✅ 1. Find task
+    const id = Number(taskId);
+
     const task = await prisma.task.findUnique({
-      where: { task_id: Number(taskId) },
+      where: { task_id: id },
     });
 
-    if (!task) {
-      const err = new Error("Task not found");
-      err.statusCode = 404;
-      throw err;
-    }
+    if (!task) throw new Error("Task not found");
 
-    // 🔒 2. Authorization
-    console.log(task.created_by, userId)
     if (task.created_by !== userId) {
-      const err = new Error("You are not allowed to delete this task");
-      err.statusCode = 403;
-      throw err;
+      throw new Error("Not authorized");
     }
 
-    // ✅ 3. Delete task (Prisma way)
-    await prisma.task.delete({
-      where: { task_id: Number(taskId) },
+    // 🚀 DELETE ALL DEPENDENCIES IN PARALLEL
+    await Promise.all([
+      prisma.taskComment.deleteMany({ where: { task_id: id } }),
+      prisma.taskAttachment.deleteMany({ where: { task_id: id } }),
+      prisma.timeLog.deleteMany({ where: { task_id: id } }),
+      prisma.taskAssignment.deleteMany({ where: { task_id: id } }),
+    ]);
+
+    // ⚠️ Handle subtasks (important)
+    await prisma.task.deleteMany({
+      where: { parent_task_id: id },
     });
-    // 🔥 ADD THIS
+
+    // ✅ Finally delete main task
+    await prisma.task.delete({
+      where: { task_id: id },
+    });
+
     if (task.parent_task_id) {
       await updateTaskProgress(task.parent_task_id);
     }
 
     await updateProjectProgress(task.project_id);
+
     return task;
 
   } catch (error) {
     throw error;
   }
-}; const updateTaskDescription = async (taskId, description) => {
+};
+
+const updateTaskDescription = async (taskId, description) => {
   if (!taskId) throw new Error("Task ID is required");
 
   const task = await prisma.task.findUnique({
@@ -1356,6 +1364,6 @@ module.exports = {
   changePriority,
   changeTaskType,
   updateTaskTags,
-  deleteTask
-  , updateTaskDescription
+  deleteTask, 
+  updateTaskDescription
 };
