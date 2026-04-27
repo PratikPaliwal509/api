@@ -9,9 +9,9 @@ const { checkTaskReminders } = require('./services/taskReminder.service');
 
 // Uncomment this for reminders
 // Run every day at 9 AM
-cron.schedule('0 9 * * *', async () => {
-  await checkTaskReminders();
-});
+// cron.schedule('0 9 * * *', async () => {
+//   await checkTaskReminders();
+// });
 
 //To solve the problem of classical prisma bigint issue
 BigInt.prototype.toJSON = function () {
