@@ -17,19 +17,64 @@ const checkTaskReminders = async () => {
 
   for (const task of tasks) {
 
-  const dueDate = new Date(task.due_date);
-  dueDate.setHours(0, 0, 0, 0);
+    const dueDate = new Date(task.due_date);
+    dueDate.setHours(0, 0, 0, 0);
 
 
-  // =========================
-  // 🔔 REMINDER LOGIC
-  // =========================
+    // =========================
+    // 🔔 REMINDER LOGIC
+    // =========================
 
-  for (const days of REMINDER_DAYS) {
-    const reminderDate = new Date(dueDate);
-    reminderDate.setDate(reminderDate.getDate() - days);
+    for (const days of REMINDER_DAYS) {
+      const reminderDate = new Date(dueDate);
+      reminderDate.setDate(reminderDate.getDate() - days);
 
-    if (reminderDate.getTime() === today.getTime()) {
+      if (reminderDate.getTime() === today.getTime()) {
+
+        const assignments = await prisma.taskAssignment.findMany({
+          where: {
+            task_id: task.task_id,
+            is_active: true
+          }
+        });
+
+        for (const assign of assignments) {
+
+          const alreadySent = await prisma.notification.findFirst({
+            where: {
+              user_id: assign.user_id,
+              entity_type: 'TASK',
+              entity_id: task.task_id,
+              notification_type: 'TASK_DUE_REMINDER',
+              created_at: { gte: today }
+            }
+          });
+
+          if (!alreadySent) {
+            await createNotification({
+              user_id: assign.user_id,
+              notification_type: 'TASK_DUE_REMINDER',
+              title: 'Task Due Reminder',
+              message: `Task "${task.task_title}" is due on ${dueDate.toDateString()} (${days} day reminder).`,
+              entity_type: 'TASK',
+              entity_id: task.task_id,
+              action_url: `/applications/tasks`,
+              sent_via_email: true
+            });
+          }
+        }
+      }
+    }
+
+    // =========================
+    // 🚨 OVERDUE LOGIC
+    // =========================
+
+    if (dueDate.getTime() < today.getTime()) {
+      console.log(`Task "${task.task_title}" is overdue! Checking notifications...${task.status === 'completed'}`)
+      if (task.status === 'completed') {
+        continue;
+      }
 
       const assignments = await prisma.taskAssignment.findMany({
         where: {
@@ -45,7 +90,7 @@ const checkTaskReminders = async () => {
             user_id: assign.user_id,
             entity_type: 'TASK',
             entity_id: task.task_id,
-            notification_type: 'TASK_DUE_REMINDER',
+            notification_type: 'TASK_OVERDUE',
             created_at: { gte: today }
           }
         });
@@ -53,9 +98,9 @@ const checkTaskReminders = async () => {
         if (!alreadySent) {
           await createNotification({
             user_id: assign.user_id,
-            notification_type: 'TASK_DUE_REMINDER',
-            title: 'Task Due Reminder',
-            message: `Task "${task.task_title}" is due on ${dueDate.toDateString()} (${days} day reminder).`,
+            notification_type: 'TASK_OVERDUE',
+            title: 'Task Overdue',
+            message: `Task "${task.task_title}" is overdue! It was due on ${dueDate.toDateString()}.`,
             entity_type: 'TASK',
             entity_id: task.task_id,
             action_url: `/applications/tasks`,
@@ -64,53 +109,8 @@ const checkTaskReminders = async () => {
         }
       }
     }
-  }
 
-  // =========================
-  // 🚨 OVERDUE LOGIC
-  // =========================
-
-  if (dueDate.getTime() < today.getTime()) {
-
-    if (task.status === 'COMPLETED') {
-      continue;
-    }
-
-    const assignments = await prisma.taskAssignment.findMany({
-      where: {
-        task_id: task.task_id,
-        is_active: true
-      }
-    });
-
-    for (const assign of assignments) {
-
-      const alreadySent = await prisma.notification.findFirst({
-        where: {
-          user_id: assign.user_id,
-          entity_type: 'TASK',
-          entity_id: task.task_id,
-          notification_type: 'TASK_OVERDUE',
-          created_at: { gte: today }
-        }
-      });
-
-      if (!alreadySent) {
-        await createNotification({
-          user_id: assign.user_id,
-          notification_type: 'TASK_OVERDUE',
-          title: 'Task Overdue',
-          message: `Task "${task.task_title}" is overdue! It was due on ${dueDate.toDateString()}.`,
-          entity_type: 'TASK',
-          entity_id: task.task_id,
-          action_url: `/applications/tasks`,
-          sent_via_email: true
-        });
-      }
-    }
-  }
-
-} // ← loop ends here
+  } // ← loop ends here
 
 
 };
