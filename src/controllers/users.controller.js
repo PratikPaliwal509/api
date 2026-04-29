@@ -140,7 +140,36 @@ exports.getUsersWithoutTeam = async (req, res, next) => {
     next(err)
   }
 }
+exports.updateUserStatus = async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const { is_active } = req.body;
 
+    if (typeof is_active !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "is_active must be boolean",
+      });
+    }
+
+    const updatedUser = await usersService.updateUserStatus(userId, is_active);
+
+    return res.status(200).json({
+      success: true,
+      message: "User status updated successfully",
+      data: updatedUser,
+    });
+
+  } catch (error) {
+    console.log(error);
+    console.error("Update status error:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
 // exports.createUser = async (req, res) => {
 //   try {
 //     const {

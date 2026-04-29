@@ -24,5 +24,6 @@ router.get(
 router.get('/users/without-team', authMiddleware, usersController.getUsersWithoutTeam)
 router.get("/:id", usersController.getUserByIdController);
 router.put('/users/:id', authMiddleware, usersController.updateUser)
+router.patch("/:id/status", authMiddleware, usersController.updateUserStatus);
 
 module.exports = router

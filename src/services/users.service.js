@@ -27,6 +27,7 @@ exports.getAllUsers = async () => {
       full_name: true,
       date_of_joining: true,
       email: true,
+      mobile: true,
       is_active: true,
       avatar_url: true,
       role: {
@@ -529,3 +530,25 @@ exports.getAvailablePortalUsersForClient = async (agencyId) => {
 
   return users;
 };  
+
+
+exports.updateUserStatus = async (userId, is_active) => {
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+  });
+
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // Update status
+  const updatedUser = await prisma.user.update({
+    where: { user_id: userId },
+    data: { is_active },
+  });
+
+  return updatedUser;
+};
