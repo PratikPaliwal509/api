@@ -102,44 +102,53 @@ const createTask = async (data, userId) => {
   }
   console.log("data.estimated_hours", data.estimated_hours)
   const taskNumber = `TASK-${String(nextNumber).padStart(4, '0')}`
-  const task = await prisma.task.create({
-    data: {
-      project_id: data.project_id,
-      parent_task_id: data.parent_task_id || null,
-      task_title: data.task_title,
-      description: data.description,
-      task_number: taskNumber,
-      task_type: data.task_type,
-      priority: data.priority,
-      status: data.status,
-      start_date: data.start_date,
-      due_date: data.due_date,
-      estimated_hours: data.estimated_hours ? data.estimated_hours : null,
-      is_milestone: data.is_milestone,
-      is_billable: data.is_billable,
-      created_by: userId,
-      tags: data.labels || [],
-      depends_on: data.depends_on || [],
-      blocks: data.blocks || [],
-      assigned_to: data.assignees || [],
-      // ✅ CLIENT FIELDS
-      visible_to_client: Boolean(data.visible_to_client),
-      client_approval_required: Boolean(data.client_approval_required),
+ const task = await prisma.task.create({
+  data: {
+    project_id: data.project_id,
+    parent_task_id: data.parent_task_id || null,
 
-      // approval defaults
-      // client_approved: data.client_approval_required ? false : true,
-      client_approved_at: null,
-      client_approved_by: null,
-    },
-    include: {
-      project: {
-        select: {
-          project_id: true,
-          project_name: true   // 👈 change based on your schema
-        }
+    task_title: data.task_title,
+    description: data.description,
+    task_number: taskNumber,
+    task_type: data.task_type,
+
+    priority: data.priority,
+    status: data.status,
+
+    start_date: data.start_date,
+    due_date: data.due_date,
+
+    estimated_hours: data.estimated_hours ? data.estimated_hours : null,
+
+    is_milestone: data.is_milestone,
+    is_billable: data.is_billable,
+
+    // 🔥 RECURRING
+    is_recurring: Boolean(data.is_recurring),
+    recurrence_pattern: data.recurrence_pattern || null,
+
+    created_by: userId,
+
+    tags: data.labels || [],
+    depends_on: data.depends_on || [],
+    blocks: data.blocks || [],
+    assigned_to: data.assignees || [],
+
+    visible_to_client: Boolean(data.visible_to_client),
+    client_approval_required: Boolean(data.client_approval_required),
+
+    client_approved_at: null,
+    client_approved_by: null,
+  },
+  include: {
+    project: {
+      select: {
+        project_id: true,
+        project_name: true
       }
     }
-  });
+  }
+});
   // 🔥 after task creation
   if (data.parent_task_id) {
     await updateTaskProgress(data.parent_task_id);

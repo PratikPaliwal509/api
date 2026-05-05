@@ -6,7 +6,12 @@ const { initSocket } = require('./socket');
 const PORT = process.env.PORT;
 const cron = require('node-cron');
 const { checkTaskReminders } = require('./services/taskReminder.service');
+const { runRecurringTasks } = require('./services/recurringTask.service');
 
+// run every minute
+cron.schedule('* * * * *', async () => {
+  await runRecurringTasks();
+});
 // Uncomment this for reminders
 // Run every day at 9 AM
 cron.schedule('0 9 * * *', async () => {
