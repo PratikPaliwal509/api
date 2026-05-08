@@ -279,3 +279,18 @@ exports.leaveProjectController = async (req, res) => {
     });
   }
 };
+
+exports.getAllProjectsWithMembers = async (req, res, next) => {
+  console.log("Fetching all projects with members for agency:", req.user.user_id);
+  try {
+    const projects = await projectService.getAllProjectsWithMembers(req.user);
+
+    return successResponse(
+      res,
+      "PROJECTS_MEMBERS_FETCHED",
+      projects
+    );
+  } catch (err) {
+    next(err);
+  }
+};
