@@ -208,6 +208,7 @@ exports.getClientById = async (id) => {
 };
 
 exports.getAllClients = async (agency_id) => {
+  console.log("Fetching clients with agency_id:", agency_id);
   const where = {}
 
   if (agency_id) {
