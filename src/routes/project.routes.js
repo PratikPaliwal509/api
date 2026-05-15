@@ -3,7 +3,11 @@ const logActivity = require('../middlewares/activityLog.middleware');
 const router = express.Router();
 const authMiddleware = require('../middlewares/auth.middleware');
 const projectController = require('../controllers/project.controller');
-
+router.get(
+  "/projects-members",
+  authMiddleware,
+  projectController.getAllProjectsWithMembers
+);
 router.get("/notes", authMiddleware, projectController.getProjectNotes)
 // Project CRUD
 router.post('/notes', authMiddleware, projectController.addProjectNote)

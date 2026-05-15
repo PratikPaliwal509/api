@@ -1083,3 +1083,64 @@ exports.leaveProject = async (projectId, userId) => {
     },
   });
 };
+
+exports.getAllProjectsWithMembers = async (user) => {
+  const roleName = user?.role?.role_name;
+
+  let where = {};
+
+  // Admin / Super Admin → all projects
+  const isAdmin =
+    roleName === "Admin" ||
+    roleName === "Super Admin";
+
+  // Normal users → only assigned projects
+  if (!isAdmin) {
+    where = {
+      projectMembers: {
+        some: {
+          user_id: user.user_id,
+          is_active: true,
+        },
+      },
+    };
+  }
+
+  const projects = await prisma.project.findMany({
+    where,
+
+    orderBy: {
+      created_at: "desc",
+    },
+
+    select: {
+      project_id: true,
+      project_name: true,
+      project_code: true,
+      status: true,
+
+      projectMembers: {
+        where: {
+          is_active: true,
+        },
+
+        select: {
+          member_id: true,
+          role_in_project: true,
+          hourly_rate: true,
+
+          user: {
+            select: {
+              user_id: true,
+              full_name: true,
+              email: true,
+              avatar_url: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return projects;
+};
