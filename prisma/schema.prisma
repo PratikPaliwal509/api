@@ -4,8 +4,9 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-   url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
+
 /////////////////////
 // CORE STRUCTURE //
 /////////////////////
@@ -60,6 +61,7 @@ model Agency {
   teams       Team[]
   clients     Client[]
   projects    Project[]
+  chats       Chat[]
 
   @@map("agencies")
 }
@@ -190,10 +192,14 @@ model User {
   notifications Notification[]
   activity_logs ActivityLog[]
 
-  created_projects  Project[] @relation("ProjectCreatedBy")
-  archived_projects Project[] @relation("ProjectArchivedBy")
-
-  team Team? @relation("UserPrimaryTeam", fields: [team_id], references: [team_id], onDelete: SetNull)
+  created_projects  Project[]         @relation("ProjectCreatedBy")
+  archived_projects Project[]         @relation("ProjectArchivedBy")
+  createdChats      Chat[]            @relation("ChatCreatedBy")
+  chatParticipants  ChatParticipant[]
+  sentMessages      ChatMessage[]     @relation("MessageSender")
+  messageReads      ChatMessageRead[]
+  chatReactions     ChatReaction[]
+  team              Team?             @relation("UserPrimaryTeam", fields: [team_id], references: [team_id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -323,8 +329,8 @@ model Project {
   manager        User?           @relation(fields: [project_manager_id], references: [user_id])
   tasks          Task[]
   projectMembers ProjectMember[]
-
-  time_logs TimeLog[]
+  chats          Chat[]
+  time_logs      TimeLog[]
 
   createdBy  User? @relation("ProjectCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
   archivedBy User? @relation("ProjectArchivedBy", fields: [archived_by], references: [user_id], onDelete: SetNull)
@@ -422,6 +428,7 @@ model Task {
   comments    TaskComment[]
   attachments TaskAttachment[]
   timeLogs    TimeLog[]
+  chats       Chat[]
 
   @@map("tasks")
 }
@@ -585,4 +592,170 @@ model ActivityLog {
   user User? @relation(fields: [user_id], references: [user_id])
 
   @@map("activity_logs")
+}
+
+model Chat {
+  chat_id Int @id @default(autoincrement())
+
+  agency_id Int
+
+  chat_type String @db.VarChar(50)
+  // direct | group | project | task
+
+  chat_name String? @db.VarChar(255)
+
+  project_id Int?
+  task_id    Int?
+
+  created_by Int?
+
+  last_message_id Int?
+
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  agency Agency @relation(fields: [agency_id], references: [agency_id])
+
+  creator User? @relation("ChatCreatedBy", fields: [created_by], references: [user_id])
+
+  project Project? @relation(fields: [project_id], references: [project_id])
+  task    Task?    @relation(fields: [task_id], references: [task_id])
+
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+
+  @@map("chats")
+}
+
+model ChatParticipant {
+  participant_id Int @id @default(autoincrement())
+
+  chat_id Int
+  user_id Int
+
+  role String? @default("member") @db.VarChar(50)
+  // admin | member
+
+  joined_at DateTime @default(now())
+
+  left_at DateTime?
+
+  is_muted Boolean @default(false)
+
+  last_read_message_id Int?
+
+  is_active Boolean @default(true)
+
+  // Relations
+  chat Chat @relation(fields: [chat_id], references: [chat_id], onDelete: Cascade)
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([chat_id, user_id])
+  @@map("chat_participants")
+}
+
+model ChatMessage {
+  message_id Int @id @default(autoincrement())
+
+  chat_id   Int
+  sender_id Int
+
+  message_type String @default("text") @db.VarChar(50)
+  // text | image | file | audio | video | system
+
+  message_text String?
+
+  reply_to_message_id Int?
+
+  is_edited Boolean   @default(false)
+  edited_at DateTime?
+
+  is_deleted Boolean   @default(false)
+  deleted_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  chat Chat @relation(fields: [chat_id], references: [chat_id], onDelete: Cascade)
+
+  sender User @relation("MessageSender", fields: [sender_id], references: [user_id])
+
+  replyTo ChatMessage? @relation("MessageReplies", fields: [reply_to_message_id], references: [message_id])
+
+  replies ChatMessage[] @relation("MessageReplies")
+
+  attachments ChatMessageAttachment[]
+
+  reads ChatMessageRead[]
+
+  reactions ChatReaction[]
+
+  @@index([chat_id])
+  @@index([sender_id])
+  @@map("chat_messages")
+}
+
+model ChatMessageAttachment {
+  attachment_id Int @id @default(autoincrement())
+
+  message_id Int
+
+  file_name String @db.VarChar(255)
+
+  file_url String
+
+  file_type String? @db.VarChar(100)
+
+  file_size BigInt?
+
+  created_at DateTime @default(now())
+
+  // Relations
+  message ChatMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  @@map("chat_message_attachments")
+}
+
+model ChatMessageRead {
+  read_id Int @id @default(autoincrement())
+
+  message_id Int
+
+  user_id Int
+
+  read_at DateTime @default(now())
+
+  // Relations
+  message ChatMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([message_id, user_id])
+  @@map("chat_message_reads")
+}
+
+model ChatReaction {
+  reaction_id Int @id @default(autoincrement())
+
+  message_id Int
+
+  user_id Int
+
+  reaction String @db.VarChar(20)
+  // ❤️ 👍 😂 etc
+
+  created_at DateTime @default(now())
+
+  // Relations
+  message ChatMessage @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([message_id, user_id, reaction])
+  @@map("chat_reactions")
 }
