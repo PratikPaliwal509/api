@@ -160,52 +160,58 @@ function initSocket(server) {
     /* =================================
         USER TYPING
     ================================= */
+/* =================================
+    USER TYPING
+================================= */
 
-    socket.on(
-      "chat:typing",
-      ({
-        chat_id,
-        user,
-      }) => {
+socket.on(
+  "chat:typing",
+  ({
+    chat_id,
+    user_id,
+    user_name,
+  }) => {
 
-        socket
-          .to(
-            `chat_${chat_id}`
-          )
-          .emit(
-            "chat:user-typing",
-            {
-              chat_id,
-              user,
-            }
-          );
-      }
+    console.log(
+      "User typing:",
+      user_name
     );
 
-    /* =================================
-        STOP TYPING
-    ================================= */
+    socket
+      .to(`chat_${chat_id}`)
+      .emit(
+        "chat:typing",
+        {
+          chat_id,
+          user_id,
+          user_name,
+        }
+      );
+  }
+);
 
-    socket.on(
-      "chat:stop-typing",
-      ({
-        chat_id,
-        user,
-      }) => {
+/* =================================
+    STOP TYPING
+================================= */
 
-        socket
-          .to(
-            `chat_${chat_id}`
-          )
-          .emit(
-            "chat:user-stop-typing",
-            {
-              chat_id,
-              user,
-            }
-          );
-      }
-    );
+socket.on(
+  "chat:stop-typing",
+  ({
+    chat_id,
+    user_id,
+  }) => {
+
+    socket
+      .to(`chat_${chat_id}`)
+      .emit(
+        "chat:stop-typing",
+        {
+          chat_id,
+          user_id,
+        }
+      );
+  }
+);
 
     /* =================================
         DISCONNECT

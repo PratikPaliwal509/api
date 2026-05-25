@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
+const authMiddleware = require('../middlewares/auth.middleware')
 const messageController = require("../controllers/chatMessage.controller");
 
 router.post("/", messageController.sendMessage);
@@ -13,6 +14,6 @@ router.put("/:id", messageController.editMessage);
 
 router.delete("/:id", messageController.deleteMessage);
 
-router.post("/:id/read", messageController.markMessageAsRead);
+router.post("/:id/read",authMiddleware, messageController.markMessageAsRead);
 
 module.exports = router;

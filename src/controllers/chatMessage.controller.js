@@ -149,7 +149,7 @@ exports.markMessageAsRead = async (
 ) => {
 
   try {
-
+console.log("Marking message as read with params:", req.params, "and user:", req.user);
     const messageId =
       Number(req.params.id);
 
