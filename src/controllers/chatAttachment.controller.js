@@ -2,6 +2,7 @@ const attachmentService = require("../services/chatAttachment.service");
 
 exports.uploadAttachment = async (req, res) => {
   try {
+    console.log("Received attachment upload request with body:", req.body); 
     const data = await attachmentService.uploadAttachment(req.body);
 
     return res.status(201).json({
@@ -10,6 +11,7 @@ exports.uploadAttachment = async (req, res) => {
       data,
     });
   } catch (error) {
+    console.log("Error uploading attachment:", error);  
     return res.status(500).json({
       success: false,
       message: error.message,

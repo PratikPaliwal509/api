@@ -1,17 +1,15 @@
 const prisma = require('../config/db');
-
 exports.uploadAttachment = async (body) => {
-  return await prisma.chatMessageAttachment.create({
-    data: {
+  const attachments = body.attachments || [];
+
+  return await prisma.chatMessageAttachment.createMany({
+    data: attachments.map((file) => ({
       message_id: body.message_id,
-      file_name: body.file_name,
-      file_url: body.file_url,
-      file_type: body.file_type,
-      file_size: body.file_size,
-    },
-    include: {
-      message: true,
-    },
+      file_name: file.file_name,
+      file_url: file.file_url,
+      file_type: file.file_type,
+      file_size: file.file_size,
+    })),
   });
 };
 
