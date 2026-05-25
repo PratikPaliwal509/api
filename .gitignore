@@ -12,7 +12,7 @@
 
 # npm
 package-lock.json
-
+prisma.config.js
 # Testing
 /coverage
 

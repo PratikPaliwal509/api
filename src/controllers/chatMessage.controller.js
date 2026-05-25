@@ -1,6 +1,5 @@
 
-const messageService =
-  require("../services/chatMessage.service");
+const messageService = require("../services/chatMessage.service");
 
 const { getIO } =
   require("../socket");
@@ -144,24 +143,51 @@ exports.deleteMessage = async (req, res) => {
     });
   }
 };
+exports.markMessageAsRead = async (
+  req,
+  res
+) => {
 
-exports.markMessageAsRead = async (req, res) => {
   try {
-    const messageId = Number(req.params.id);
 
-    const { user_id } = req.body;
+    const messageId =
+      Number(req.params.id);
 
-    const data = await messageService.markMessageAsRead(
-      messageId,
-      user_id
+    // LOGGED IN USER
+    const currentUserId =
+      req.user.user_id;
+
+    const data =
+      await messageService.markMessageAsRead(
+        messageId,
+        currentUserId
+      );
+
+    // SOCKET EVENT
+    const io = getIO();
+
+    io.to(
+      `chat_${data.chat_id}`
+    ).emit(
+      "message:read",
+      {
+        message_id:
+          data.message_id,
+
+        user_id:
+          currentUserId,
+      }
     );
 
     return res.status(200).json({
       success: true,
-      message: "Message marked as read",
+      message:
+        "Message marked as read",
       data,
     });
+
   } catch (error) {
+
     return res.status(500).json({
       success: false,
       message: error.message,

@@ -3,8 +3,10 @@ const chatService = require("../services/chat.service");
 
 exports.createChat = async (req, res) => {
   try {
+    console.log("Creating chat with agency id:", req.user);
+    req.body.agency_id = req.user.agency.agency_id;
     const data = await chatService.createChat(req.body);
-
+    console.log("Chat created:", data);
     return res.status(201).json({
       success: true,
       message: "Chat created successfully",

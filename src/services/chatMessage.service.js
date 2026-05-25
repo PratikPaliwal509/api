@@ -83,11 +83,60 @@ exports.deleteMessage = async (messageId) => {
   });
 };
 
-exports.markMessageAsRead = async (messageId, userId) => {
-  return await prisma.chatMessageRead.create({
+exports.markMessageAsRead = async (
+  messageId,
+  userId
+) => {
+
+  // CHECK MESSAGE
+  const message =
+    await prisma.chatMessage.findUnique({
+      where: {
+        message_id: messageId,
+      },
+    });
+
+  if (!message) {
+    throw new Error("Message not found");
+  }
+
+  // PREVENT DUPLICATE READS
+  const existingRead =
+    await prisma.chatMessageRead.findFirst({
+      where: {
+        message_id: messageId,
+        user_id: userId,
+      },
+    });
+
+  if (!existingRead) {
+
+    await prisma.chatMessageRead.create({
+      data: {
+        message_id: messageId,
+        user_id: userId,
+      },
+    });
+  }
+
+  // UPDATE LAST READ MESSAGE
+  await prisma.chatParticipant.update({
+    where: {
+      chat_id_user_id: {
+        chat_id: message.chat_id,
+        user_id: userId,
+      },
+    },
+
     data: {
-      message_id: messageId,
-      user_id: userId,
+      last_read_message_id:
+        messageId,
     },
   });
+
+  return {
+    message_id: messageId,
+    chat_id: message.chat_id,
+    user_id: userId,
+  };
 };
