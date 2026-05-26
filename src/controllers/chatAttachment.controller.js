@@ -1,9 +1,21 @@
 const attachmentService = require("../services/chatAttachment.service");
+const { getIO } = require("../socket");          // ← ADD
+const { PrismaClient } = require("@prisma/client"); // ← ADD
+const prisma = require('../config/db');           // ← ADD
 
 exports.uploadAttachment = async (req, res) => {
   try {
-    console.log("Received attachment upload request with body:", req.body); 
     const data = await attachmentService.uploadAttachment(req.body);
+
+    const io = getIO();
+
+    const fullMessage = await prisma.chatMessage.findUnique({
+      where: { message_id: req.body.message_id },
+      include: { attachments: true, sender: true },  // ← include sender too
+    });
+
+    // ← CHANGE THIS: was "chat:new-message", now "chat:message-updated"
+    io.to(`chat_${fullMessage.chat_id}`).emit("chat:message-updated", fullMessage);
 
     return res.status(201).json({
       success: true,
@@ -11,14 +23,9 @@ exports.uploadAttachment = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.log("Error uploading attachment:", error);  
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 exports.getAttachmentsByMessage = async (req, res) => {
   try {
     const messageId = Number(req.params.messageId);
