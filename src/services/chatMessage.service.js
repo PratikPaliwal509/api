@@ -2,13 +2,15 @@ const prisma = require('../config/db');;
 
 exports.sendMessage = async (body) => {
   console.log("services chat message")
+  console.log(body)
   return await prisma.chatMessage.create({
     data: {
       chat_id: body.chat_id,
       sender_id: body.sender_id,
       message_type: body.message_type || "text",
       message_text: body.message_text,
-      reply_to_message_id: body.reply_to_message_id || null,
+       reply_to_message_id:
+        body.reply_to_message_id || null,
     },
     include: {
       sender: true,
@@ -30,7 +32,18 @@ exports.getMessagesByChat = async (chatId) => {
       attachments: true,
       reactions: true,
       reads: true,
-      replyTo: true,
+      replyTo: {
+        include: {
+
+          sender: true,
+
+          attachments: true,
+
+          reactions: true,
+
+          reads: true,
+        },
+      },
       replies: true,
     },
     orderBy: {
@@ -49,7 +62,12 @@ exports.getMessageById = async (messageId) => {
       attachments: true,
       reactions: true,
       reads: true,
-      replyTo: true,
+      replyTo: {
+        include: {
+          sender: true,
+          attachments: true,
+        },
+      },
       replies: true,
     },
   });

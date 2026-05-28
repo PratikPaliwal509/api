@@ -4,16 +4,19 @@ const messageService = require("../services/chatMessage.service");
 const { getIO } =
   require("../socket");
 
-exports.sendMessage = async (
-  req,
-  res
-) => {
-
+exports.sendMessage = async (req, res) => {
   try {
 
-    const data =
+    // CREATE MESSAGE
+    const createdMessage =
       await messageService.sendMessage(
         req.body
+      );
+
+    // FETCH FULL MESSAGE WITH RELATIONS
+    const data =
+      await messageService.getMessageById(
+        createdMessage.message_id
       );
 
     const io = getIO();
@@ -33,9 +36,7 @@ exports.sendMessage = async (
         PERSONAL NOTIFICATION
     ================================= */
 
-    if (
-      data.receiver_id
-    ) {
+    if (data.receiver_id) {
 
       io.to(
         `user_${data.receiver_id}`
@@ -62,8 +63,7 @@ exports.sendMessage = async (
 
     return res.status(500).json({
       success: false,
-      message:
-        error.message,
+      message: error.message,
     });
   }
 };

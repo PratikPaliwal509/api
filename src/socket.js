@@ -114,6 +114,59 @@ function initSocket(server) {
 /* =================================
     USER TYPING
 ================================= */
+/* =================================
+    UPDATE MESSAGE
+================================= */
+socket.on(
+  "chat:message-updated",
+  (updatedMessage) => {
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+
+        if (
+          msg.message_id !==
+          updatedMessage.message_id
+        ) {
+          return msg;
+        }
+
+        return {
+          ...msg,
+          ...updatedMessage,
+
+          attachments:
+            updatedMessage.attachments || [],
+
+          replyTo:
+            updatedMessage.replyTo
+              ? {
+                  message_id:
+                    updatedMessage.replyTo.message_id,
+
+                  text:
+                    updatedMessage.replyTo.message_text || "",
+
+                  sender_name:
+                    updatedMessage.replyTo.sender?.full_name ||
+                    "User",
+
+                  attachments:
+                    updatedMessage.replyTo.attachments || [],
+
+                  message_type:
+                    updatedMessage.replyTo.message_type || "text",
+                }
+              : null,
+        };
+      })
+    );
+  }
+);
+
+/* =================================
+    USER TYPING
+================================= */
 
 socket.on(
   "chat:typing",
