@@ -104,7 +104,9 @@ exports.getMessageById = async (req, res) => {
 };
 
 exports.editMessage = async (req, res) => {
+
   try {
+
     const messageId = Number(req.params.id);
 
     const data = await messageService.editMessage(
@@ -112,12 +114,22 @@ exports.editMessage = async (req, res) => {
       req.body
     );
 
+    // SOCKET EMIT
+    const io = getIO();
+
+    io.to(`chat_${data.chat_id}`).emit(
+      "chat:message-edited",
+      data
+    );
+
     return res.status(200).json({
       success: true,
       message: "Message updated successfully",
       data,
     });
+
   } catch (error) {
+
     return res.status(500).json({
       success: false,
       message: error.message,

@@ -89,7 +89,27 @@ function initSocket(server) {
         );
       }
     );
+/* =================================
+    EDIT MESSAGE
+================================= */
 
+socket.on(
+  "chat:edit-message",
+  (updatedMessage) => {
+
+    socket
+      .to(`chat_${updatedMessage.chat_id}`)
+      .emit(
+        "chat:message-edited",
+        updatedMessage
+      );
+
+    console.log(
+      "Message edited:",
+      updatedMessage.message_id
+    );
+  }
+);
     /* =================================
         LEAVE CHAT ROOM
     ================================= */
