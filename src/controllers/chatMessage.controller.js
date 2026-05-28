@@ -138,17 +138,34 @@ exports.editMessage = async (req, res) => {
 };
 
 exports.deleteMessage = async (req, res) => {
-  try {
-    const messageId = Number(req.params.id);
 
-    const data = await messageService.deleteMessage(messageId);
+  try {
+
+    const messageId =
+      Number(req.params.id);
+
+    const deletedMessage =
+      await messageService.deleteMessage(messageId);
+
+    // SOCKET EMIT
+    const io = getIO();
+
+    io.to(`chat_${deletedMessage.chat_id}`)
+      .emit(
+        "chat:message-deleted",
+        {
+          message_id: deletedMessage.message_id,
+          chat_id: deletedMessage.chat_id,
+        }
+      );
 
     return res.status(200).json({
       success: true,
       message: "Message deleted successfully",
-      data,
     });
+
   } catch (error) {
+
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -161,7 +178,7 @@ exports.markMessageAsRead = async (
 ) => {
 
   try {
-console.log("Marking message as read with params:", req.params, "and user:", req.user);
+    console.log("Marking message as read with params:", req.params, "and user:", req.user);
     const messageId =
       Number(req.params.id);
 

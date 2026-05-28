@@ -14,6 +14,6 @@ router.put("/:id", messageController.editMessage);
 
 router.delete("/:id", messageController.deleteMessage);
 
-router.post("/:id/read",authMiddleware, messageController.markMessageAsRead);
+router.post("/:id/read", authMiddleware, messageController.markMessageAsRead);
 
 module.exports = router;

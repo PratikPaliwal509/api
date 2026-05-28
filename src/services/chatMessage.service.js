@@ -9,7 +9,7 @@ exports.sendMessage = async (body) => {
       sender_id: body.sender_id,
       message_type: body.message_type || "text",
       message_text: body.message_text,
-       reply_to_message_id:
+      reply_to_message_id:
         body.reply_to_message_id || null,
     },
     include: {
@@ -25,7 +25,7 @@ exports.getMessagesByChat = async (chatId) => {
   return await prisma.chatMessage.findMany({
     where: {
       chat_id: chatId,
-      is_deleted: false,
+      // is_deleted: false,
     },
     include: {
       sender: true,

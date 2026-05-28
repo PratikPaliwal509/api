@@ -89,27 +89,36 @@ function initSocket(server) {
         );
       }
     );
-/* =================================
-    EDIT MESSAGE
-================================= */
+    socket.on("chat:delete-message", ({ message_id, chat_id }) => {
+      // Broadcast to everyone else in the chat room
+      socket.to(`chat_${chat_id}`).emit("chat:message-deleted", {
+        message_id,
+        chat_id,
+      });
 
-socket.on(
-  "chat:edit-message",
-  (updatedMessage) => {
+      console.log(`Message ${message_id} deleted in chat_${chat_id}`);
+    });
+    /* =================================
+        EDIT MESSAGE
+    ================================= */
 
-    socket
-      .to(`chat_${updatedMessage.chat_id}`)
-      .emit(
-        "chat:message-edited",
-        updatedMessage
-      );
+    socket.on(
+      "chat:edit-message",
+      (updatedMessage) => {
 
-    console.log(
-      "Message edited:",
-      updatedMessage.message_id
+        socket
+          .to(`chat_${updatedMessage.chat_id}`)
+          .emit(
+            "chat:message-edited",
+            updatedMessage
+          );
+
+        console.log(
+          "Message edited:",
+          updatedMessage.message_id
+        );
+      }
     );
-  }
-);
     /* =================================
         LEAVE CHAT ROOM
     ================================= */
@@ -131,111 +140,111 @@ socket.on(
     /* =================================
         USER TYPING
     ================================= */
-/* =================================
-    USER TYPING
-================================= */
-/* =================================
-    UPDATE MESSAGE
-================================= */
-socket.on(
-  "chat:message-updated",
-  (updatedMessage) => {
+    /* =================================
+        USER TYPING
+    ================================= */
+    /* =================================
+        UPDATE MESSAGE
+    ================================= */
+    socket.on(
+      "chat:message-updated",
+      (updatedMessage) => {
 
-    setMessages((prev) =>
-      prev.map((msg) => {
+        setMessages((prev) =>
+          prev.map((msg) => {
 
-        if (
-          msg.message_id !==
-          updatedMessage.message_id
-        ) {
-          return msg;
-        }
+            if (
+              msg.message_id !==
+              updatedMessage.message_id
+            ) {
+              return msg;
+            }
 
-        return {
-          ...msg,
-          ...updatedMessage,
+            return {
+              ...msg,
+              ...updatedMessage,
 
-          attachments:
-            updatedMessage.attachments || [],
+              attachments:
+                updatedMessage.attachments || [],
 
-          replyTo:
-            updatedMessage.replyTo
-              ? {
-                  message_id:
-                    updatedMessage.replyTo.message_id,
+              replyTo:
+                updatedMessage.replyTo
+                  ? {
+                    message_id:
+                      updatedMessage.replyTo.message_id,
 
-                  text:
-                    updatedMessage.replyTo.message_text || "",
+                    text:
+                      updatedMessage.replyTo.message_text || "",
 
-                  sender_name:
-                    updatedMessage.replyTo.sender?.full_name ||
-                    "User",
+                    sender_name:
+                      updatedMessage.replyTo.sender?.full_name ||
+                      "User",
 
-                  attachments:
-                    updatedMessage.replyTo.attachments || [],
+                    attachments:
+                      updatedMessage.replyTo.attachments || [],
 
-                  message_type:
-                    updatedMessage.replyTo.message_type || "text",
-                }
-              : null,
-        };
-      })
-    );
-  }
-);
-
-/* =================================
-    USER TYPING
-================================= */
-
-socket.on(
-  "chat:typing",
-  ({
-    chat_id,
-    user_id,
-    user_name,
-  }) => {
-
-    console.log(
-      "User typing:",
-      user_name
+                    message_type:
+                      updatedMessage.replyTo.message_type || "text",
+                  }
+                  : null,
+            };
+          })
+        );
+      }
     );
 
-    socket
-      .to(`chat_${chat_id}`)
-      .emit(
-        "chat:typing",
-        {
-          chat_id,
-          user_id,
-          user_name,
-        }
-      );
-  }
-);
+    /* =================================
+        USER TYPING
+    ================================= */
 
-/* =================================
-    STOP TYPING
-================================= */
+    socket.on(
+      "chat:typing",
+      ({
+        chat_id,
+        user_id,
+        user_name,
+      }) => {
 
-socket.on(
-  "chat:stop-typing",
-  ({
-    chat_id,
-    user_id,
-  }) => {
+        console.log(
+          "User typing:",
+          user_name
+        );
 
-    socket
-      .to(`chat_${chat_id}`)
-      .emit(
-        "chat:stop-typing",
-        {
-          chat_id,
-          user_id,
-        }
-      );
-  }
-);
+        socket
+          .to(`chat_${chat_id}`)
+          .emit(
+            "chat:typing",
+            {
+              chat_id,
+              user_id,
+              user_name,
+            }
+          );
+      }
+    );
+
+    /* =================================
+        STOP TYPING
+    ================================= */
+
+    socket.on(
+      "chat:stop-typing",
+      ({
+        chat_id,
+        user_id,
+      }) => {
+
+        socket
+          .to(`chat_${chat_id}`)
+          .emit(
+            "chat:stop-typing",
+            {
+              chat_id,
+              user_id,
+            }
+          );
+      }
+    );
 
     /* =================================
         DISCONNECT
