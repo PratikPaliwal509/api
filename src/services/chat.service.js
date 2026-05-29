@@ -13,10 +13,8 @@ exports.createChat = async (body) => {
   });
 };
 // GET USER CHATS
-exports.getUserChats = async (
-  userId
-) => {
-  return await prisma.chat.findMany({
+exports.getUserChats = async (userId) => {
+  const chats = await prisma.chat.findMany({
     where: {
       participants: {
         some: {
@@ -37,37 +35,93 @@ exports.getUserChats = async (
           created_at: "desc",
         },
         take: 1,
+        include: {
+          sender: true,
+          reads: true,
+          attachments: true,
+        },
       },
     },
-
-    orderBy: {
-      updated_at: "desc",
-    },
   });
-};
 
+  const chatsWithUnread = await Promise.all(
+    chats.map(async (chat) => {
+      const unread_count = await prisma.chatMessage.count({
+        where: {
+          chat_id: chat.chat_id,
+          is_deleted: false,
+
+          sender_id: {
+            not: Number(userId),
+          },
+
+          reads: {
+            none: {
+              user_id: Number(userId),
+            },
+          },
+        },
+      });
+
+      return {
+        ...chat,
+        unread_count,
+      };
+    })
+  );
+
+  // SORT BY LAST MESSAGE
+  chatsWithUnread.sort((a, b) => {
+    const aTime = a.messages?.[0]?.created_at
+      ? new Date(a.messages[0].created_at).getTime()
+      : 0;
+
+    const bTime = b.messages?.[0]?.created_at
+      ? new Date(b.messages[0].created_at).getTime()
+      : 0;
+
+    return bTime - aTime;
+  });
+
+  return chatsWithUnread;
+};
 exports.getAllChats = async () => {
-  return await prisma.chat.findMany({
+  const chats = await prisma.chat.findMany({
     include: {
       creator: true,
+
       participants: {
         include: {
           user: true,
         },
       },
+
       messages: {
         take: 1,
         orderBy: {
           created_at: "desc",
         },
       },
+
       project: true,
       task: true,
     },
-    orderBy: {
-      created_at: "desc",
-    },
   });
+
+  // SORT BY LAST MESSAGE
+  chats.sort((a, b) => {
+    const aTime = a.messages?.[0]?.created_at
+      ? new Date(a.messages[0].created_at).getTime()
+      : 0;
+
+    const bTime = b.messages?.[0]?.created_at
+      ? new Date(b.messages[0].created_at).getTime()
+      : 0;
+
+    return bTime - aTime;
+  });
+
+  return chats;
 };
 
 exports.getChatById = async (chatId) => {

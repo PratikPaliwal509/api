@@ -19,6 +19,7 @@ const generateEmployeeId = async () => {
 }
 // GET ALL USERS
 exports.getAllUsers = async () => {
+  console.log("Get All Users Service called");
   return await prisma.user.findMany({
     select: {
       user_id: true,
@@ -555,9 +556,10 @@ exports.updateUserStatus = async (userId, is_active) => {
 
 // services/users.service.js
 
-exports.getAllUsers = async ({
+exports.getAllUsersService = async ({
   agency_id,
 }) => {
+  console.log("Get All Users Service called");
 
   return prisma.user.findMany({
     where: {

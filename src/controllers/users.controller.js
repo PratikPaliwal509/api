@@ -27,7 +27,7 @@ exports.getUserByIdController = async (req, res) => {
 };
 // GET ALL USERS
 exports.getAllUsers = async (req, res) => {
-  try {
+  try {console.log("Get All Users Controller called");
     const users = await usersService.getAllUsers()
 
     return res.status(200).json({
@@ -179,7 +179,7 @@ exports.getAllUsersController = async (req, res) => {
       req.user?.agency?.agency_id;
 
     const users =
-      await usersService.getAllUsers({
+      await usersService.getAllUsersService({
         agency_id: agencyId,
       });
 
