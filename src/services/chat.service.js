@@ -1,16 +1,115 @@
 const prisma = require('../config/db');
 
+const { getIO } =
+  require("../socket");
 exports.createChat = async (body) => {
-  return await prisma.chat.create({
-    data: {
+
+  const currentUserId = Number(body.created_by);
+  const otherUserId = Number(body.user_id);
+
+  // Validation
+  if (!otherUserId) {
+    throw new Error("user_id is required");
+  }
+
+  /* =========================================
+      CHECK EXISTING DIRECT CHAT
+  ========================================= */
+
+  const existingChats = await prisma.chat.findMany({
+    where: {
       agency_id: body.agency_id,
-      chat_type: body.chat_type,
-      chat_name: body.chat_name,
-      project_id: body.project_id,
-      task_id: body.task_id,
-      created_by: body.created_by,
+      chat_type: "direct",
+      is_active: true,
+    },
+    include: {
+      participants: {
+        select: {
+          user_id: true,
+          user: true,
+        },
+      },
+      messages: {
+        orderBy: {
+          created_at: "desc",
+        },
+        take: 1,
+      },
     },
   });
+
+  const existingChat = existingChats.find((chat) => {
+
+    const ids = chat.participants.map((p) =>
+      Number(p.user_id)
+    );
+
+    return (
+      ids.length === 2 &&
+      ids.includes(currentUserId) &&
+      ids.includes(otherUserId)
+    );
+  });
+
+  console.log("Existing chat:", existingChat);
+
+  // Return existing chat
+  if (existingChat) {
+    return existingChat;
+  }
+
+  /* =========================================
+      CREATE NEW CHAT
+  ========================================= */
+
+  const newChat = await prisma.chat.create({
+    data: {
+      agency_id: body.agency_id,
+      chat_type: "direct",
+      created_by: currentUserId,
+
+      participants: {
+        create: [
+          {
+            user: {
+              connect: {
+                user_id: currentUserId,
+              },
+            },
+          },
+          {
+            user: {
+              connect: {
+                user_id: otherUserId,
+              },
+            },
+          },
+        ],
+      },
+    },
+
+    include: {
+      participants: {
+        include: {
+          user: true,
+        },
+      },
+      messages: true,
+    },
+  });
+
+  /* =========================================
+      SOCKET EMIT NEW CHAT
+  ========================================= */
+
+  const io = getIO();
+
+  io.to(`user_${otherUserId}`).emit(
+    "chat:new-chat",
+    newChat
+  );
+
+  return newChat;
 };
 // GET USER CHATS
 exports.getUserChats = async (userId) => {

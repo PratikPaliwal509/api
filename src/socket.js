@@ -71,7 +71,27 @@ function initSocket(server) {
     socket.join(
       `user_${userId}`
     );
+/* =================================
+    UPDATE MESSAGE
+================================= */
 
+socket.on(
+  "chat:update-message",
+  (updatedMessage) => {
+
+    socket
+      .to(`chat_${updatedMessage.chat_id}`)
+      .emit(
+        "chat:message-updated",
+        updatedMessage
+      );
+
+    console.log(
+      "Message updated:",
+      updatedMessage.message_id
+    );
+  }
+);
     /* =================================
         JOIN CHAT ROOM
     ================================= */

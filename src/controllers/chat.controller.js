@@ -3,17 +3,30 @@ const chatService = require("../services/chat.service");
 
 exports.createChat = async (req, res) => {
   try {
-    console.log("Creating chat with agency id:", req.user);
-    req.body.agency_id = req.user.agency.agency_id;
-    const data = await chatService.createChat(req.body);
-    console.log("Chat created:", data);
+
+    req.body.agency_id =
+      req.user.agency.agency_id;
+
+    console.log(
+      "Request body:",
+      req.body
+    );
+
+    const data =
+      await chatService.createChat(
+        req.body
+      );
+
     return res.status(201).json({
       success: true,
       message: "Chat created successfully",
       data,
     });
+
   } catch (error) {
-    console.log(error)
+
+    console.log(error);
+
     return res.status(500).json({
       success: false,
       message: error.message,
