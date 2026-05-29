@@ -280,7 +280,6 @@ exports.leaveProjectController = async (req, res) => {
   }
 };
 
-
 exports.getAllProjectsWithMembers = async (req, res, next) => {
   console.log("Fetching all projects with members for agency:", req.user.user_id);
   try {

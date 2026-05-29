@@ -27,7 +27,7 @@ exports.getUserByIdController = async (req, res) => {
 };
 // GET ALL USERS
 exports.getAllUsers = async (req, res) => {
-  try {
+  try {console.log("Get All Users Controller called");
     const users = await usersService.getAllUsers()
 
     return res.status(200).json({
@@ -167,6 +167,38 @@ exports.updateUserStatus = async (req, res) => {
     return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || "Internal server error",
+    });
+  }
+};
+
+exports.getAllUsersController = async (req, res) => {
+  console.log("Get All Users Controller called");
+  try {
+
+    const agencyId =
+      req.user?.agency?.agency_id;
+
+    const users =
+      await usersService.getAllUsersService({
+        agency_id: agencyId,
+      });
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Get All Users Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
     });
   }
 };

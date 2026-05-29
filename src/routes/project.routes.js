@@ -14,7 +14,11 @@ router.post('/notes', authMiddleware, projectController.addProjectNote)
 
 // router.get("/managed", authMiddleware, projectController.getManagedProjects);
 router.get("/without-notes", authMiddleware, projectController.getProjectsWithoutNotes)
-
+router.get(
+  "/projects-members",
+  authMiddleware,
+  projectController.getAllProjectsWithMembers
+);
 router.post('/', authMiddleware, logActivity({
     action: 'CREATE',
     entityType: 'Project',

@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/auth.middleware')
 
 // GET ALL USERS
 router.get('/user', authMiddleware, usersController.getAllUsers)
+router.get('/getallusers', authMiddleware, usersController.getAllUsersController)
 router.post("/users", authMiddleware, usersController.createUser);
 
 router.get('/me', authMiddleware, usersController.getUserByToken)

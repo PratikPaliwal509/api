@@ -19,6 +19,7 @@ const generateEmployeeId = async () => {
 }
 // GET ALL USERS
 exports.getAllUsers = async () => {
+  console.log("Get All Users Service called");
   return await prisma.user.findMany({
     select: {
       user_id: true,
@@ -551,4 +552,68 @@ exports.updateUserStatus = async (userId, is_active) => {
   });
 
   return updatedUser;
+};
+
+// services/users.service.js
+
+exports.getAllUsersService = async ({
+  agency_id,
+}) => {
+  console.log("Get All Users Service called");
+
+  return prisma.user.findMany({
+    where: {
+      agency_id: Number(agency_id),
+
+      // Optional:
+      // is_active: true,
+    },
+
+    select: {
+      user_id: true,
+      employee_id: true,
+
+      first_name: true,
+      last_name: true,
+      full_name: true,
+
+      email: true,
+      mobile: true,
+      phone: true,
+
+      avatar_url: true,
+      bio: true,
+      job_title: true,
+
+      is_active: true,
+
+      created_at: true,
+      updated_at: true,
+
+      role: {
+        select: {
+          role_id: true,
+          role_name: true,
+        },
+      },
+
+      department: {
+        select: {
+          department_id: true,
+          department_name: true,
+        },
+      },
+
+      team: {
+        select: {
+          team_id: true,
+          team_name: true,
+        },
+      },
+    },
+
+    orderBy: {
+      full_name: "asc",
+    },
+  });
 };
