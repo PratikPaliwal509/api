@@ -1,8 +1,42 @@
 const prisma = require('../config/db');;
-
+const taskService = require('./task.service');
 exports.sendMessage = async (body) => {
-  console.log("services chat message")
-  console.log(body)
+
+  // TASK MESSAGE
+  if (body.message_type === "task") {
+    console.log("Creating task message with body:", body);
+    const task = await taskService.createTask(
+      body.task,
+      body.sender_id
+    );
+console.log("Task created:", task);
+    return await prisma.chatMessage.create({
+      data: {
+        chat_id: body.chat_id,
+        sender_id: body.sender_id,
+        message_type: "task",
+        message_text: `Assigned task: ${task.task_title}`,
+        task_id: task.task_id
+      },
+      include: {
+        sender: true,
+        task: {
+          include: {
+            assignments: {
+              include: {
+                user: true
+              }
+            }
+          }
+        },
+        attachments: true,
+        reactions: true,
+        reads: true
+      }
+    });
+  }
+
+  // NORMAL MESSAGE
   return await prisma.chatMessage.create({
     data: {
       chat_id: body.chat_id,
@@ -20,38 +54,66 @@ exports.sendMessage = async (body) => {
     },
   });
 };
-
 exports.getMessagesByChat = async (chatId) => {
   return await prisma.chatMessage.findMany({
     where: {
       chat_id: chatId,
-      // is_deleted: false,
     },
     include: {
       sender: true,
+
+      task: {
+        include: {
+          project: {
+            select: {
+              project_id: true,
+              project_name: true,
+            },
+          },
+          assignments: {
+            where: {
+              is_active: true,
+            },
+            include: {
+              user: {
+                select: {
+                  user_id: true,
+                  full_name: true,
+                  avatar_url: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      },
+
       attachments: true,
       reactions: true,
       reads: true,
+
       replyTo: {
         include: {
-
           sender: true,
-
+          task: true,
           attachments: true,
-
           reactions: true,
-
           reads: true,
         },
       },
-      replies: true,
+
+      replies: {
+        include: {
+          sender: true,
+          task: true,
+        },
+      },
     },
     orderBy: {
       created_at: "asc",
     },
   });
 };
-
 exports.getMessageById = async (messageId) => {
   return await prisma.chatMessage.findUnique({
     where: {
@@ -68,6 +130,7 @@ exports.getMessageById = async (messageId) => {
           attachments: true,
         },
       },
+      task:true,
       replies: true,
     },
   });
@@ -157,4 +220,14 @@ exports.markMessageAsRead = async (
     chat_id: message.chat_id,
     user_id: userId,
   };
+};
+
+exports.getTaskByMessageId = async (
+  task_id
+) => {
+  return await prisma.task.findFirst({
+    where: {
+      task_id,
+    },
+  });
 };

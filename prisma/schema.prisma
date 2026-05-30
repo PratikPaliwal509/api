@@ -430,6 +430,8 @@ model Task {
   timeLogs    TimeLog[]
   chats       Chat[]
 
+  chatMessages ChatMessage[]
+
   @@map("tasks")
 }
 
@@ -661,11 +663,11 @@ model ChatParticipant {
 model ChatMessage {
   message_id Int @id @default(autoincrement())
 
-  chat_id   Int
-  sender_id Int
-
+  chat_id      Int
+  sender_id    Int
+  task_id      Int?
   message_type String @default("text") @db.VarChar(50)
-  // text | image | file | audio | video | system
+  // text | image | file | audio | video | system |  task
 
   message_text String?
 
@@ -685,6 +687,8 @@ model ChatMessage {
 
   sender User @relation("MessageSender", fields: [sender_id], references: [user_id])
 
+  task Task? @relation(fields: [task_id], references: [task_id], onDelete: SetNull)
+
   replyTo ChatMessage? @relation("MessageReplies", fields: [reply_to_message_id], references: [message_id])
 
   replies ChatMessage[] @relation("MessageReplies")
@@ -697,6 +701,7 @@ model ChatMessage {
 
   @@index([chat_id])
   @@index([sender_id])
+  @@index([task_id])
   @@map("chat_messages")
 }
 
