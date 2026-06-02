@@ -1,22 +1,50 @@
 const prisma = require('../config/db');;
 const taskService = require('./task.service');
 exports.sendMessage = async (body) => {
-
   // TASK MESSAGE
   if (body.message_type === "task") {
-    console.log("Creating task message with body:", body);
+    console.log("Creating task message with body:", body.task);
+    // Clean assignees before sending to createTask
+    const taskPayload = {
+      ...body.task,
+      assignees: (body.task?.assignees || [])
+        .filter(
+          (id) =>
+            id !== null &&
+            id !== undefined &&
+            id !== ""
+        )
+        .map(Number),
+    };
+
+    console.log("Task Payload:", taskPayload);
+
     const task = await taskService.createTask(
-      body.task,
+      taskPayload,
       body.sender_id
     );
-console.log("Task created:", task);
+
+    // Create task assignment records
+    if (taskPayload.assignees.length > 0) {
+      await prisma.taskAssignment.createMany({
+        data: taskPayload.assignees.map(
+          (userId) => ({
+            task_id: task.task_id,
+            user_id: userId,
+            assigned_by: body.sender_id,
+          })
+        ),
+        skipDuplicates: true,
+      });
+    }
+
     return await prisma.chatMessage.create({
       data: {
         chat_id: body.chat_id,
         sender_id: body.sender_id,
         message_type: "task",
         message_text: `Assigned task: ${task.task_title}`,
-        task_id: task.task_id
+        task_id: task.task_id,
       },
       include: {
         sender: true,
@@ -24,15 +52,15 @@ console.log("Task created:", task);
           include: {
             assignments: {
               include: {
-                user: true
-              }
-            }
-          }
+                user: true,
+              },
+            },
+          },
         },
         attachments: true,
         reactions: true,
-        reads: true
-      }
+        reads: true,
+      },
     });
   }
 
@@ -64,16 +92,7 @@ exports.getMessagesByChat = async (chatId) => {
 
       task: {
         include: {
-          project: {
-            select: {
-              project_id: true,
-              project_name: true,
-            },
-          },
           assignments: {
-            where: {
-              is_active: true,
-            },
             include: {
               user: {
                 select: {
@@ -130,7 +149,22 @@ exports.getMessageById = async (messageId) => {
           attachments: true,
         },
       },
-      task:true,
+      task: {
+        include: {
+          assignments: {
+            include: {
+              user: {
+                select: {
+                  user_id: true,
+                  full_name: true,
+                  avatar_url: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      },
       replies: true,
     },
   });
