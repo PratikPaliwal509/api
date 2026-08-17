@@ -169,6 +169,7 @@ model User {
   managed_clients Client[] @relation("AccountManagedClients")
   portal_clients  Client[] @relation("PortalClients")
   created_clients Client[] @relation("CreatedClients")
+  weeklyPlans WeeklyPlan[]
 
   managed_projects Project[]
 
@@ -331,6 +332,7 @@ model Project {
   projectMembers ProjectMember[]
   chats          Chat[]
   time_logs      TimeLog[]
+  weeklyPlans WeeklyPlan[]
 
   createdBy  User? @relation("ProjectCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
   archivedBy User? @relation("ProjectArchivedBy", fields: [archived_by], references: [user_id], onDelete: SetNull)
@@ -409,6 +411,7 @@ model Task {
   tags          String[] @default([])
   custom_fields Json?
   checklist     Json?
+  weekly_plan_id Int? 
 
   created_by Int?
   created_at DateTime @default(now())
@@ -423,6 +426,8 @@ model Task {
 
   createdBy  User? @relation("TaskCreatedBy", fields: [created_by], references: [user_id], onDelete: SetNull)
   approvedBy User? @relation("TaskApprovedBy", fields: [client_approved_by], references: [user_id], onDelete: SetNull)
+
+  weeklyPlan WeeklyPlan? @relation(fields: [weekly_plan_id], references: [weekly_plan_id], onDelete: SetNull)
 
   assignments TaskAssignment[]
   comments    TaskComment[]
@@ -763,4 +768,31 @@ model ChatReaction {
 
   @@unique([message_id, user_id, reaction])
   @@map("chat_reactions")
+}
+
+model WeeklyPlan {
+  weekly_plan_id Int @id @default(autoincrement())
+
+  title       String
+  description String?
+
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+
+  project_id Int?
+  created_by Int
+
+  status String @default("active")
+  // active | completed | archived
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  project Project? @relation(fields: [project_id], references: [project_id], onDelete: SetNull)
+
+  creator User @relation(fields: [created_by], references: [user_id])
+
+  tasks Task[]
+
+  @@map("weekly_plans")
 }

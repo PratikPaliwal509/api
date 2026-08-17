@@ -24,6 +24,10 @@ const messageRoutes = require('./routes/chatMessage.routes')
 const reactionRoutes = require('./routes/chatReaction.routes')
 const attachmentRoutes = require('./routes/chatAttachment.routes')
 
+const weeklyPlanRoutes = require(
+  "./routes/weeklyPlan.routes"
+);
+
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
@@ -63,7 +67,10 @@ app.use("/api/chat-participants", participantRoutes);
 app.use("/api/chat-messages", messageRoutes);
 app.use("/api/chat-reactions", reactionRoutes);
 app.use("/api/chat-attachments", attachmentRoutes);
-
+app.use(
+  "/api/weekly-plans",
+  weeklyPlanRoutes
+);
 app.get("/", (req, res) => {
   res.send("API running");
 });
