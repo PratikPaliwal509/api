@@ -23,11 +23,12 @@ const participantRoutes = require('./routes/chatParticipant.routes')
 const messageRoutes = require('./routes/chatMessage.routes')
 const reactionRoutes = require('./routes/chatReaction.routes')
 const attachmentRoutes = require('./routes/chatAttachment.routes')
-
+const facebookRoutes = require('./routes/facebook.route')
 const weeklyPlanRoutes = require(
   "./routes/weeklyPlan.routes"
 );
 
+const facebookWebhookRoutes = require("./routes/facebookWebhookRoutes");
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
@@ -70,6 +71,11 @@ app.use("/api/chat-attachments", attachmentRoutes);
 app.use(
   "/api/weekly-plans",
   weeklyPlanRoutes
+);
+app.use("/api/facebook", facebookRoutes);
+app.use(
+    "/api/webhooks",
+    facebookWebhookRoutes
 );
 app.get("/", (req, res) => {
   res.send("API running");

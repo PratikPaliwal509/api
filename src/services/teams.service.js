@@ -27,7 +27,7 @@ exports.createTeam = async (data) => {
 
   if (!agency_id || !team_name) {
     throw new Error('TEAM_REQUIRED_FIELDS_MISSING');
-  }
+  }     
 
   // Agency check
   const agency = await prisma.agency.findUnique({
