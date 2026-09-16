@@ -11,7 +11,7 @@ const createPost = async (req, res) => {
             });
         }
 
-        const result = await facebookService.publishPost(message);
+        const result = await facebookService.publishPost({message});
 
         return res.status(200).json({
             success: true,

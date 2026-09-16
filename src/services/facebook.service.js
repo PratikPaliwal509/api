@@ -1,54 +1,57 @@
 const axios = require("axios");
 
-const GRAPH_API = `https://graph.facebook.com/v24.0`;
-// const GRAPH_API = `https://graph.facebook.com/${process.env.META_API_VERSION}`;
-const publishPost = async (message) => {
+const GRAPH_API = `https://graph.facebook.com/v19.0`;
+const publishPost = async ({ message, link = null }) => {
     try {
-        const pageId = process.env.META_PAGE_ID;
-        const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN;
+        const pageId = process.env.META_PAGE_ID?.trim();
+        const pageAccessToken = process.env.META_PAGE_ACCESS_TOKEN?.trim();
 
-        if (!pageId) throw new Error("META_PAGE_ID is missing");
-        if (!pageAccessToken) throw new Error("META_PAGE_ACCESS_TOKEN is missing");
-        if (!message || !message.trim()) throw new Error("Post message is required");
-console.log("Publishing Facebook Post:", message);
-        const body = new URLSearchParams();
-        body.append("message", message.trim());
-        body.append("access_token", pageAccessToken);
+        if (!pageId) {
+            throw new Error("META_PAGE_ID is missing");
+        }
 
-        // Force Meta to only calculate and return the created object ID
-        body.append("fields", "id");
+        if (!pageAccessToken) {
+            throw new Error("META_PAGE_ACCESS_TOKEN is missing");
+        }
+
+        if (!message?.trim()) {
+            throw new Error("Post message is required");
+        }
+
+        const requestBody = {
+            message: message.trim()
+        };
+
+        if (link) {
+            requestBody.link = link.trim();
+        }
 
         const response = await axios.post(
             `${GRAPH_API}/${pageId}/feed`,
-            null,
+            requestBody,
             {
                 params: {
-                    message,
                     access_token: pageAccessToken
                 }
             }
         );
+
         return {
-            id: response.data.id
+            success: true,
+            id: response.data.id,
+            data: response.data
         };
+
     } catch (error) {
-
-        console.error("FACEBOOK PUBLISH ERROR");
-        console.error("HTTP STATUS:", error.response?.status);
-
         console.error(
-            "FACEBOOK ERROR:",
-            JSON.stringify(error.response?.data, null, 2)
-        );
-
-        console.error(
-            "FACEBOOK HEADERS:",
-            JSON.stringify(error.response?.headers, null, 2)
+            "Facebook publish error:",
+            error.response?.data || error.message
         );
 
         throw error;
     }
 };
+
 // Get Facebook Page details
 const getPageDetails = async () => {
     try {
@@ -126,6 +129,7 @@ const debugPageToken = async () => {
         throw error;
     }
 };
+
 module.exports = {
     publishPost,
     getPageDetails,
