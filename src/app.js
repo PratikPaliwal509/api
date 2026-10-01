@@ -24,6 +24,8 @@ const messageRoutes = require('./routes/chatMessage.routes')
 const reactionRoutes = require('./routes/chatReaction.routes')
 const attachmentRoutes = require('./routes/chatAttachment.routes')
 const facebookRoutes = require('./routes/facebook.route')
+const facebookReportRoutes =
+  require("./routes/facebookReport.routes");
 
 const metaLeadRoutes = require("./routes/metaLead.routes");
 
@@ -32,7 +34,10 @@ const weeklyPlanRoutes = require(
 );
 
 const metaAdsRoutes =
-    require("./routes/metaAds.routes");
+  require("./routes/metaAds.routes");
+
+const metaAdsReportRoutes =
+  require("./routes/metaAdsReport.routes");
 
 const facebookWebhookRoutes = require("./routes/facebookWebhookRoutes");
 app.use(express.json());
@@ -81,17 +86,28 @@ app.use(
 app.use("/api/facebook", facebookRoutes);
 
 app.use(
-    "/api/meta-ads",
-    metaAdsRoutes
+  "/api/meta-ads",
+  metaAdsRoutes
 );
 app.use("/api/meta-leads", metaLeadRoutes);
 app.use(
-    "/api/webhooks",
-    facebookWebhookRoutes
+  "/api/webhooks",
+  facebookWebhookRoutes
+);
+
+app.use(
+  "/api/facebook/reports",
+  facebookReportRoutes
+);
+app.use(
+  "/api/facebook/campaigns",
+  metaAdsReportRoutes
 );
 app.get("/", (req, res) => {
   res.send("API running");
 });
+
+
 
 
 

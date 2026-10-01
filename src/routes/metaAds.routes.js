@@ -128,4 +128,29 @@ router.post(
     upload.single("image"),
     metaAdsController.uploadAdImage
 );
+
+router.delete("/campaigns/:campaignId", metaAdsController.deleteCampaign);
+router.delete("/adsets/:adSetId", metaAdsController.deleteAdSet);
+router.delete("/ads/:adId", metaAdsController.deleteAd);
+router.delete("/creatives/:creativeId", metaAdsController.deleteCreative);
+
+router.put(
+    "/campaigns/:campaignId",
+    metaAdsController.updateCampaign
+);
+
+router.put(
+    "/adsets/:adSetId",
+    metaAdsController.updateAdSet
+);
+
+router.put(
+    "/ads/:adId",
+    metaAdsController.updateAd
+);
+
+router.put(
+    "/creatives/:creativeId",
+    metaAdsController.updateCreative
+);
 module.exports = router;

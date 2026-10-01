@@ -54,7 +54,6 @@ exports.getTeams = async (req, res, next) => {
 }
 
 exports.getTeamsProgress = async (req, res, next) => {
-  console.log("running")
   try {
     const data = await teamsService.getTeamsProgress(req.user);
 

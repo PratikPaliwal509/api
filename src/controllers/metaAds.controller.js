@@ -571,6 +571,291 @@ const getCreativeDetails = async (req, res) => {
         });
     }
 };
+
+const deleteCampaign = async (req, res) => {
+
+    try {
+
+        const { campaignId } = req.params;
+
+        const data = await metaAdsService.deleteCampaign(
+            campaignId
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Campaign deleted successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete Campaign Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// ==========================================
+// DELETE AD SET
+// DELETE /api/meta-ads/adsets/:adSetId
+// ==========================================
+
+const deleteAdSet = async (req, res) => {
+
+    try {
+
+        const { adSetId } = req.params;
+
+        const data = await metaAdsService.deleteAdSet(
+            adSetId
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Ad Set deleted successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete Ad Set Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// ==========================================
+// DELETE AD
+// DELETE /api/meta-ads/ads/:adId
+// ==========================================
+
+const deleteAd = async (req, res) => {
+
+    try {
+
+        const { adId } = req.params;
+
+        const data = await metaAdsService.deleteAd(
+            adId
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Ad deleted successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete Ad Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const deleteCreative = async (req, res) => {
+
+    try {
+
+        const { creativeId } = req.params;
+
+        const data =
+            await metaAdsService.deleteCreative(
+                creativeId
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "Creative and associated image deleted successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete Creative Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+const updateCampaign = async (req, res) => {
+
+    try {
+
+        const { campaignId } = req.params;
+
+        if (!campaignId) {
+            return res.status(400).json({
+                success: false,
+                message: "Campaign ID is required"
+            });
+        }
+
+        const data =
+            await metaAdsService.updateCampaign(
+                campaignId,
+                req.body
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "Campaign updated successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update Campaign Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+const updateAdSet = async (req, res) => {
+
+    try {
+
+        const { adSetId } = req.params;
+
+        if (!adSetId) {
+            return res.status(400).json({
+                success: false,
+                message: "Ad Set ID is required"
+            });
+        }
+
+        const data =
+            await metaAdsService.updateAdSet(
+                adSetId,
+                req.body
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "Ad Set updated successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update Ad Set Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+const updateAd = async (req, res) => {
+
+    try {
+
+        const { adId } = req.params;
+
+        if (!adId) {
+            return res.status(400).json({
+                success: false,
+                message: "Ad ID is required"
+            });
+        }
+
+        const data =
+            await metaAdsService.updateAd(
+                adId,
+                req.body
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "Ad updated successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update Ad Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+const updateCreative = async (req, res) => {
+
+    try {
+
+        const { creativeId } = req.params;
+
+        if (!creativeId) {
+            return res.status(400).json({
+                success: false,
+                message: "Creative ID is required"
+            });
+        }
+
+        const data =
+            await metaAdsService.updateCreative(
+                creativeId,
+                req.body,
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "Creative updated successfully",
+            data
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update Creative Error:",
+            error.message
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 module.exports = {
     getAdAccount,
     getCampaigns,
@@ -588,5 +873,14 @@ module.exports = {
     getAdCreatives,
     createAdCreative,
     createAd,
-    uploadAdImage
+    uploadAdImage,
+    deleteCampaign,
+    deleteAdSet,
+    deleteAd,
+    deleteCreative,
+    updateCampaign,
+    updateAdSet,
+    updateAd,
+    updateCreative
+
 };
