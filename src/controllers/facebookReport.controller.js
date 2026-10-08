@@ -14,7 +14,7 @@ const generatePostReport = async (
         const {
             fromDate,
             toDate,
-            compareType = "previous_period",
+            compareType,
             compareFromDate,
             compareToDate,
         } = req.query;

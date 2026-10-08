@@ -39,6 +39,7 @@ const metaAdsRoutes =
 const metaAdsReportRoutes =
   require("./routes/metaAdsReport.routes");
 
+  const seoRoutes = require("./routes/seo.routes");
 const facebookWebhookRoutes = require("./routes/facebookWebhookRoutes");
 app.use(express.json());
 
@@ -102,6 +103,11 @@ app.use(
 app.use(
   "/api/facebook/campaigns",
   metaAdsReportRoutes
+);
+
+app.use(
+    "/api/seo",
+    seoRoutes
 );
 app.get("/", (req, res) => {
   res.send("API running");
