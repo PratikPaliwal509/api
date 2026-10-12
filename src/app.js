@@ -1,46 +1,48 @@
 const express = require("express");
-const cors = require('cors')
+const cors = require("cors");
 const app = express();
 const socket = require("./socket");
+const authMiddleware = require("./middlewares/auth.middleware");
 
-const rolesRoutes = require('./routes/roles.route');
-const agenciesRoutes = require('./routes/agencies.routes');
-const authRoutes = require('./routes/auth.routes');
+const rolesRoutes = require("./routes/roles.route");
+const agenciesRoutes = require("./routes/agencies.routes");
+const authRoutes = require("./routes/auth.routes");
 
-const departmentsRoutes = require('./routes/departments.routes');
-const clientsRoutes = require('./routes/clients.routes');
-const teamsRoutes = require('./routes/teams.routes');
+const departmentsRoutes = require("./routes/departments.routes");
+const clientsRoutes = require("./routes/clients.routes");
+const teamsRoutes = require("./routes/teams.routes");
 // const usersRoutes = require('./routes/users.routes');
-const projectRoutes = require('./routes/project.routes');
-const taskRoutes = require('./routes/task.routes');
-const notificationRoutes = require('./routes/notification.route');
-const userService = require('./routes/users.routes');
-const hierarchyRoutes = require('./routes/hierarchy')
-const emailRoutes = require('./routes/email.routes');
+const projectRoutes = require("./routes/project.routes");
+const taskRoutes = require("./routes/task.routes");
+const notificationRoutes = require("./routes/notification.route");
+const userService = require("./routes/users.routes");
+const hierarchyRoutes = require("./routes/hierarchy");
+const emailRoutes = require("./routes/email.routes");
 
-const chatRoutes = require('./routes/chat.routes')
-const participantRoutes = require('./routes/chatParticipant.routes')
-const messageRoutes = require('./routes/chatMessage.routes')
-const reactionRoutes = require('./routes/chatReaction.routes')
-const attachmentRoutes = require('./routes/chatAttachment.routes')
-const facebookRoutes = require('./routes/facebook.route')
-const facebookReportRoutes =
-  require("./routes/facebookReport.routes");
+const chatRoutes = require("./routes/chat.routes");
+const participantRoutes = require("./routes/chatParticipant.routes");
+const messageRoutes = require("./routes/chatMessage.routes");
+const reactionRoutes = require("./routes/chatReaction.routes");
+const attachmentRoutes = require("./routes/chatAttachment.routes");
+const facebookRoutes = require("./routes/facebook.route");
+const facebookReportRoutes = require("./routes/facebookReport.routes");
 
 const metaLeadRoutes = require("./routes/metaLead.routes");
 
-const weeklyPlanRoutes = require(
-  "./routes/weeklyPlan.routes"
-);
+const weeklyPlanRoutes = require("./routes/weeklyPlan.routes");
 
-const metaAdsRoutes =
-  require("./routes/metaAds.routes");
+const metaAdsRoutes = require("./routes/metaAds.routes");
 
-const metaAdsReportRoutes =
-  require("./routes/metaAdsReport.routes");
+const metaAdsReportRoutes = require("./routes/metaAdsReport.routes");
 
-  const seoRoutes = require("./routes/seo.routes");
+const seoRoutes = require("./routes/seo.routes");
 const facebookWebhookRoutes = require("./routes/facebookWebhookRoutes");
+
+// Prasad Added Codes------------------------------------------------
+const googleCallbackRoutes = require("./routes/integrations/callback.routes");
+const googleRoutes = require("./routes/integrations/google.routes");
+//-------------------------------------------------------------------
+
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
@@ -54,67 +56,55 @@ app.use((req, res, next) => {
 
   next();
 });
-app.use('/api/roles', rolesRoutes);
-app.use('/api/agencies', agenciesRoutes);
-app.use('/api/auth', authRoutes);
+app.use("/api/roles", rolesRoutes);
+app.use("/api/agencies", agenciesRoutes);
+app.use("/api/auth", authRoutes);
 
-app.use('/api/departments', departmentsRoutes);
-app.use('/api/clients', clientsRoutes);
-app.use('/api/teams', teamsRoutes);
+app.use("/api/departments", departmentsRoutes);
+app.use("/api/clients", clientsRoutes);
+app.use("/api/teams", teamsRoutes);
 // app.use('/api/users', usersRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/tasks', taskRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/tasks", taskRoutes);
 
-app.use('/api/tasksComments', require('./routes/taskComment.route'));
-app.use('/api/taskAttachments', require('./routes/taskAttachment.route'));
-app.use('/api/tasks/timelogs', require('./routes/timeLog.route'));
-app.use('/api/notification', notificationRoutes);
-app.use('/api/activityLogs', require('./routes/activityLog.route'));
-app.use('/api/hierarchy', hierarchyRoutes)
-app.use('/api/users', userService);
-app.use('/api/timesheet', require('./routes/timesheet.route'))
-app.use('/api/email', emailRoutes);
+app.use("/api/tasksComments", require("./routes/taskComment.route"));
+app.use("/api/taskAttachments", require("./routes/taskAttachment.route"));
+app.use("/api/tasks/timelogs", require("./routes/timeLog.route"));
+app.use("/api/notification", notificationRoutes);
+app.use("/api/activityLogs", require("./routes/activityLog.route"));
+app.use("/api/hierarchy", hierarchyRoutes);
+app.use("/api/users", userService);
+app.use("/api/timesheet", require("./routes/timesheet.route"));
+app.use("/api/email", emailRoutes);
 
 app.use("/api/chats", chatRoutes);
 app.use("/api/chat-participants", participantRoutes);
 app.use("/api/chat-messages", messageRoutes);
 app.use("/api/chat-reactions", reactionRoutes);
 app.use("/api/chat-attachments", attachmentRoutes);
-app.use(
-  "/api/weekly-plans",
-  weeklyPlanRoutes
-);
+app.use("/api/weekly-plans", weeklyPlanRoutes);
 app.use("/api/facebook", facebookRoutes);
 
-app.use(
-  "/api/meta-ads",
-  metaAdsRoutes
-);
+app.use("/api/meta-ads", metaAdsRoutes);
 app.use("/api/meta-leads", metaLeadRoutes);
-app.use(
-  "/api/webhooks",
-  facebookWebhookRoutes
-);
+app.use("/api/webhooks", facebookWebhookRoutes);
 
-app.use(
-  "/api/facebook/reports",
-  facebookReportRoutes
-);
-app.use(
-  "/api/facebook/campaigns",
-  metaAdsReportRoutes
-);
+app.use("/api/facebook/reports", facebookReportRoutes);
+app.use("/api/facebook/campaigns", metaAdsReportRoutes);
 
-app.use(
-    "/api/seo",
-    seoRoutes
-);
+app.use("/api/seo", seoRoutes);
+
+//Prasad Added Code --------------------------------------------
+
+// 1. Public callback (NO auth middleware)
+app.use("/api/integrations/google", googleCallbackRoutes);
+
+// 2. Protected routes (WITH auth middleware)
+app.use("/api/integrations/google", authMiddleware, googleRoutes);
+
+//----------------------------------------------------------------------
 app.get("/", (req, res) => {
   res.send("API running");
 });
-
-
-
-
 
 module.exports = app;
